@@ -34,35 +34,38 @@
             height: 100%;
         }
 
-        /* --- CUSTOM MINIMALIST SCROLLBAR STYLES (NOW THICKER) --- */
+        /* --- CUSTOM MINIMALIST SCROLLBAR STYLES (SIMPLIFIED) --- */
         
-        /* For Chrome, Edge, Safari */
+        /* For Chrome, Edge, Safari: Minimal dimensions, focused on color */
         body::-webkit-scrollbar,
-        #liked-locations-list-wrapper::-webkit-scrollbar {
-            width: 12px; /* Increased from 8px */
-            height: 12px; /* Increased from 8px */
+        #affected-areas-list-wrapper::-webkit-scrollbar,
+        #controls-panel-wrapper::-webkit-scrollbar {
+            width: 8px; /* Required for WebKit browsers to show the scrollbar */
         }
 
         body::-webkit-scrollbar-track,
-        #liked-locations-list-wrapper::-webkit-scrollbar-track {
+        #affected-areas-list-wrapper::-webkit-scrollbar-track,
+        #controls-panel-wrapper::-webkit-scrollbar-track {
             background: #1f2937; /* gray-800 */
-            border-radius: 6px; 
+            border-radius: 4px; 
         }
 
         body::-webkit-scrollbar-thumb,
-        #liked-locations-list-wrapper::-webkit-scrollbar-thumb {
+        #affected-areas-list-wrapper::-webkit-scrollbar-thumb,
+        #controls-panel-wrapper::-webkit-scrollbar-thumb {
             background-color: #4b5563; /* gray-600 */
-            border-radius: 6px; 
-            /* Border helps create separation if the track is visible */
-            border: 3px solid #1f2937; /* Increased for better visual weight */
+            border-radius: 4px; 
+            /* Simple border to match the background/track color */
+            border: 2px solid #1f2937; 
         }
 
         body::-webkit-scrollbar-thumb:hover,
-        #liked-locations-list-wrapper::-webkit-scrollbar-thumb:hover {
+        #affected-areas-list-wrapper::-webkit-scrollbar-thumb:hover,
+        #controls-panel-wrapper::-webkit-scrollbar-thumb:hover {
             background-color: #6b7280; /* gray-500 on hover */
         }
         
-        /* For Firefox */
+        /* For Firefox: Uses implicit dimensions */
         * {
             /* Sets thumb color (#4b5563) and track color (#1f2937) */
             scrollbar-color: #4b5563 #1f2937; 
@@ -179,24 +182,22 @@
 
     <!-- Header -->
     <header class="bg-gray-800 p-4 z-20 border-b border-gray-700">
-        <!-- Header text updated from 7-Day to 3-Day -->
         <h1 class="text-2xl md:text-3xl font-bold text-gray-100 text-center">
             HazeRadar: 3-Day Forecast
         </h1>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Area: Now controls the vertical stacking of the two main rows -->
     <main class="flex-1 flex justify-center items-start p-2 md:p-4 overflow-y-auto">
         
-        <!-- Outer Wrapper -->
+        <!-- Outer Wrapper: Stacks Row 1 (Map/Controls) and Row 2 (Cards) vertically -->
         <div class="w-full xl:max-w-7xl flex flex-col gap-4">
 
-            <!-- ROW 1 CONTAINER: Map and Cards -->
+            <!-- ROW 1 CONTAINER: Map (L) and Controls Panel (R) - Side-by-side on desktop -->
             <div class="flex flex-col md:flex-row gap-4 flex-shrink-0">
 
-                <!-- 1. Map Container -->
-                <!-- UPDATED: Mobile height increased from h-[40vh] to h-[60vh] -->
-                <div id="map-wrapper" class="w-full relative h-[60vh] md:h-auto md:aspect-video rounded-xl shadow-2xl overflow-hidden bg-gray-800 md:w-3/5 order-1 md:order-1">
+                <!-- 1. Map Container (md:w-3/5, order-1) -->
+                <div id="map-wrapper" class="w-full relative h-[60vh] md:h-auto md:aspect-video rounded-xl shadow-2xl overflow-hidden bg-gray-800 md:w-3/5 order-1">
                     <!-- Map div -->
                     <div id="map" class="absolute inset-0 z-10"></div>
                     
@@ -209,14 +210,24 @@
                     </div>
                 </div>
                 
-                <!-- NEW MOBILE SLIDER PANEL (mobile order-2, hidden on desktop) -->
-                <div id="mobile-slider-panel" class="w-full bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0 order-2 md:hidden">
-                    <h3 class="text-lg font-semibold text-cyan-400 mb-2 border-b border-gray-700 pb-1">Select Prediction Time</h3>
-                    <div id="slider-region-mobile" class="p-4 bg-gray-700 rounded-lg shadow-inner flex-shrink-0">
-                        <label for="notch-slider-mobile" class="block text-sm font-medium text-gray-300 mb-4">Current Time Selection: <span id="time-label-mobile" class="font-bold text-teal-300">12hr</span></label>
+                <!-- 2. Unified Controls Panel (md:w-2/5, order-2) -->
+                <div id="controls-panel-wrapper" class="w-full md:w-2/5 bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0 order-2 md:overflow-y-auto">
+                    
+                    <!-- Prediction Timeline Header -->
+                    <h2 class="text-xl font-semibold text-cyan-400 mb-4 border-b border-gray-700 pb-2 flex items-center flex-shrink-0">
+                        <!-- Clock Icon for Timeline -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Prediction Timeline
+                    </h2>
+                    
+                    <!-- Slider Region (Appears on BOTH mobile and desktop now) -->
+                    <div id="slider-region" class="p-4 bg-gray-700 rounded-lg mb-4 shadow-inner flex-shrink-0">
+                        <label for="notch-slider" class="block text-sm font-medium text-gray-300 mb-4">Current Time Selection: <span id="time-label" class="font-bold text-teal-300">12hr</span></label>
                         <div class="relative pt-1">
-                            <!-- Updated for 7 nodes: min=1, max=7, default=4 (12hr) -->
-                            <input type="range" min="1" max="7" value="4" step="1" id="notch-slider-mobile" class="w-full custom-slider">
+                            <!-- Single Slider input, used for both mobile/desktop -->
+                            <input type="range" min="1" max="7" value="4" step="1" id="notch-slider" class="w-full custom-slider">
                             
                             <!-- 7 Labels for 7 nodes - Added px-2 and pb-2 for padding -->
                             <div class="flex justify-between text-xs pt-2 pb-2 px-2 text-gray-400">
@@ -230,78 +241,44 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- 2. Square Cards Panel -->
-                <div id="square-cards-panel" class="w-full md:w-2/5 bg-gray-800 rounded-xl shadow-2xl p-4 flex-shrink-0 flex flex-col justify-center order-3 md:order-2">
-                    <h3 class="text-xl font-semibold text-teal-400 mb-4 border-b border-gray-700 pb-2">Haze Metrics</h3>
-                    
-                    <!-- 4 Square Cards Container -->
-                    <div id="square-cards-container" class="grid grid-cols-2 gap-3">
-                        <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                            <p id="metric-current-haze" class="text-3xl font-bold text-cyan-400">Moderate</p>
-                            <p class="text-sm text-gray-300 text-center mt-1">Current Status</p>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                            <p id="metric-predicted-aqi" class="text-3xl font-bold text-teal-400">155</p>
-                            <p class="text-sm text-gray-300 text-center mt-1">Predicted AQI</p>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                            <p id="metric-wind-speed" class="text-3xl font-bold text-blue-400">12 km/h</p>
-                            <p class="text-sm text-gray-300 text-center mt-1">Wind Speed</p>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                            <p id="metric-visibility" class="text-3xl font-bold text-purple-400">8.5 km</p>
-                            <p class="text-sm text-gray-300 text-center mt-1">Visibility</p>
+
+                    <!-- Affected Areas List -->
+                    <div class="mt-2 flex-shrink-0">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Affected Areas (Click to View)</h3>
+                        <!-- This div manages internal scrolling if the list gets too long -->
+                        <div id="affected-areas-list-wrapper" class="max-h-64 overflow-y-auto space-y-3 pb-4">
+                            <div id="affected-areas-list" class="space-y-3">
+                                <!-- Dynamic cards will be injected here by JavaScript -->
+                            </div>
+                            <p id="no-cards-message" class="text-gray-400 italic text-center py-8 hidden">
+                                No locations have been liked yet.
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ROW 2: Desktop Slider and Affected Areas List -->
-            <div id="controls-panel" class="w-full bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0">
+            <!-- ROW 2 CONTAINER: Haze Metrics Cards (Full Width, below map/controls) -->
+            <div id="haze-metrics-panel" class="w-full bg-gray-800 rounded-xl shadow-2xl p-4 flex-shrink-0">
+                <h3 class="text-xl font-semibold text-teal-400 mb-4 border-b border-gray-700 pb-2">Haze Metrics</h3>
                 
-                <h2 class="text-xl font-semibold text-cyan-400 mb-4 border-b border-gray-700 pb-2 flex items-center flex-shrink-0">
-                    <!-- New Clock Icon for Timeline -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Prediction Timeline
-                </h2>
-                
-                <!-- 7-Notch Slider Region (DESKTOP ONLY - hidden on mobile) -->
-                <div id="slider-region-desktop" class="p-4 bg-gray-700 rounded-lg mb-4 shadow-inner flex-shrink-0 hidden md:block">
-                    <label for="notch-slider-desktop" class="block text-sm font-medium text-gray-300 mb-4">Current Time Selection: <span id="time-label-desktop" class="font-bold text-teal-300">12hr</span></label>
-                    <div class="relative pt-1">
-                        <!-- Updated for 7 nodes: min=1, max=7, default=4 (12hr) -->
-                        <input type="range" min="1" max="7" value="4" step="1" id="notch-slider-desktop" class="w-full custom-slider">
-                        
-                        <!-- 7 Labels for 7 nodes - Added px-2 and pb-2 for padding -->
-                        <div class="flex justify-between text-xs pt-2 pb-2 px-2 text-gray-400">
-                            <span class="text-center">Now</span>
-                            <span class="text-center">3hr</span>
-                            <span class="text-center">6hr</span>
-                            <span class="text-center">12hr</span>
-                            <span class="text-center">1d</span>
-                            <span class="text-center">2d</span>
-                            <span class="text-center">3d</span>
-                        </div>
+                <!-- 4 Square Cards Container -->
+                <div id="square-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-current-haze" class="text-3xl font-bold text-cyan-400">Moderate</p>
+                        <p class="text-sm text-gray-300 text-center mt-1">Current Status</p>
                     </div>
-                </div>
-                
-                <!-- Scrollable List (Now contained with max-height) -->
-                <div class="mt-2 flex-shrink-0">
-                    <!-- Title changed from Liked Locations -->
-                    <h3 class="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Affected Areas (Click to View)</h3>
-                    <!-- This div manages internal scrolling if the list gets too long -->
-                    <!-- Note: This wrapper is targeted by the custom scrollbar CSS -->
-                    <div id="liked-locations-list-wrapper" class="max-h-64 overflow-y-auto space-y-3 pb-4">
-                        <div id="liked-locations-list" class="space-y-3">
-                            <!-- Dynamic cards will be injected here by JavaScript -->
-                        </div>
-                        <p id="no-cards-message" class="text-gray-400 italic text-center py-8 hidden">
-                            No locations have been liked yet.
-                        </p>
+                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-predicted-aqi" class="text-3xl font-bold text-teal-400">155</p>
+                        <p class="text-sm text-gray-300 text-center mt-1">Predicted AQI</p>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-wind-speed" class="text-3xl font-bold text-blue-400">12 km/h</p>
+                        <p class="text-sm text-gray-300 text-center mt-1">Wind Speed</p>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-visibility" class="text-3xl font-bold text-purple-400">8.5 km</p>
+                        <p class="text-sm text-gray-300 text-center mt-1">Visibility</p>
                     </div>
                 </div>
             </div>
@@ -326,8 +303,8 @@
             7: "3d"
         };
 
-        // Mock data assuming you have a list of liked locations with coordinates
-        const likedData = [
+        // Mock data assuming you have a list of affected locations
+        const affectedAreasData = [
             { id: 1, name: "Kota Bandung", province: "Jawa Barat", lat: -6.9175, lng: 107.6191, aqi: 102, status: 'Moderate' },
             { id: 2, name: "Kota Surabaya", province: "Jawa Timur", lat: -7.2575, lng: 112.7521, aqi: 78, status: 'Good' },
             { id: 3, name: "Kota Medan", province: "Sumatera Utara", lat: 3.5952, lng: 98.6775, aqi: 155, status: 'Unhealthy' },
@@ -340,10 +317,10 @@
             const messageOverlay = document.getElementById('message-overlay');
             const messageText = document.getElementById('message-text');
             const loadingSpinner = document.getElementById('loading-spinner');
-            const sliderMobile = document.getElementById('notch-slider-mobile');
-            const sliderDesktop = document.getElementById('notch-slider-desktop');
-            const timeLabelMobile = document.getElementById('time-label-mobile');
-            const timeLabelDesktop = document.getElementById('time-label-desktop');
+            // Single slider element
+            const slider = document.getElementById('notch-slider');
+            // Single time label element
+            const timeLabel = document.getElementById('time-label');
 
             if (!mapContainer) {
                 console.error("Map container 'map' not found.");
@@ -364,19 +341,18 @@
 
             // --- SLIDER & UI UPDATE LOGIC ---
             function updatePredictionUI(timePeriod) {
-                // 1. Update the display labels
-                timeLabelMobile.textContent = timePeriod;
-                timeLabelDesktop.textContent = timePeriod;
+                // 1. Update the display label
+                timeLabel.textContent = timePeriod;
 
                 // 2. Mock: Update the metric cards based on the selected time
-                // This is where you would call an API/function to fetch real prediction data
-                const sliderValue = parseInt(sliderDesktop.value);
+                const sliderValue = parseInt(slider.value);
                 // Example shift: +20 AQI per step past 12hr
                 const currentAQI = 100 + (sliderValue - 4) * 20 + Math.floor(Math.random() * 10); 
                 document.getElementById('metric-predicted-aqi').textContent = currentAQI;
                 
                 let status = 'Moderate';
-                let statusColor = 'text-cyan-400';
+                let statusColor = 'text-yellow-400'; // Default for Moderate
+                
                 if (currentAQI > 200) { status = 'Hazardous'; statusColor = 'text-purple-400'; }
                 else if (currentAQI > 150) { status = 'Unhealthy'; statusColor = 'text-red-400'; }
                 else if (currentAQI > 100) { status = 'Moderate'; statusColor = 'text-yellow-400'; }
@@ -395,23 +371,14 @@
             function handleSliderChange(event) {
                 const sliderValue = event.target.value;
                 const timePeriod = TIME_PERIODS[sliderValue];
-                
-                // Ensure both sliders stay in sync
-                if (event.target.id === 'notch-slider-mobile') {
-                    sliderDesktop.value = sliderValue;
-                } else if (event.target.id === 'notch-slider-desktop') {
-                    sliderMobile.value = sliderValue;
-                }
-                
                 updatePredictionUI(timePeriod);
             }
 
-            // Attach event listeners to both sliders
-            sliderMobile.addEventListener('input', handleSliderChange);
-            sliderDesktop.addEventListener('input', handleSliderChange);
+            // Attach event listener to the single slider
+            slider.addEventListener('input', handleSliderChange);
             
             // Initialize UI with default value
-            updatePredictionUI(TIME_PERIODS[sliderDesktop.value]);
+            updatePredictionUI(TIME_PERIODS[slider.value]);
 
 
             // --- MAP & GEOJSON LOGIC ---
@@ -498,8 +465,8 @@
             }
 
             // --- Card Rendering Logic ---
-            function renderCards(data) {
-                const listContainer = document.getElementById('liked-locations-list');
+            function renderAffectedAreas(data) {
+                const listContainer = document.getElementById('affected-areas-list');
                 const noCardsMessage = document.getElementById('no-cards-message');
                 listContainer.innerHTML = '';
                 
@@ -594,9 +561,9 @@
                 }
             }
 
-            // Start loading the data and rendering cards
+            // Start loading the data and rendering affected areas
             loadGeoJson();
-            renderCards(likedData);
+            renderAffectedAreas(affectedAreasData);
         });
     </script>
 
