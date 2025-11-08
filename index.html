@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark"> <!-- Added 'dark' class here for initial state -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title updated from 7-Day to 3-Day -->
     <title>HazeRadar: 3-Day Smoke Prediction</title>
     
     <!-- Load Leaflet CSS -->
@@ -22,10 +21,10 @@
     <style>
         /* Set full height for map and body */
         html, body {
-            height: 100%;
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
         }
         
         /* Ensure the map container has height and is relative/absolute correctly */
@@ -34,66 +33,88 @@
             height: 100%;
         }
 
-        /* --- CUSTOM MINIMALIST SCROLLBAR STYLES (SIMPLIFIED) --- */
+        /* --- CUSTOM MINIMALIST SCROLLBAR STYLES --- */
+        /* Note: Tailwind dark mode utilities are not always enough for custom scrollbars, 
+           so we use explicit CSS overrides based on the parent 'html.dark' class. */
         
-        /* For Chrome, Edge, Safari: Minimal dimensions, focused on color */
-        body::-webkit-scrollbar,
-        #affected-areas-list-wrapper::-webkit-scrollbar,
-        #controls-panel-wrapper::-webkit-scrollbar {
-            width: 8px; /* Required for WebKit browsers to show the scrollbar */
+        /* Dark Mode Scrollbar Defaults */
+        :root {
+            /* Sets thumb color (#4b5563) and track color (#1f2937) for Firefox in dark mode */
+            scrollbar-color: #4b5563 #1f2937; 
+            scrollbar-width: thin;
         }
 
+        /* Light Mode Scrollbar Overrides (No prefix, assumes light default) */
+        html:not(.dark) {
+            /* Sets thumb color (#9ca3af) and track color (#f3f4f6) for Firefox in light mode */
+            scrollbar-color: #9ca3af #f3f4f6; 
+        }
+
+        /* Webkit Scrollbar Defaults (Dark Mode) */
+        .dark body::-webkit-scrollbar-track,
+        .dark #affected-areas-list-wrapper::-webkit-scrollbar-track,
+        .dark #controls-panel-wrapper::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+        }
+
+        .dark body::-webkit-scrollbar-thumb,
+        .dark #affected-areas-list-wrapper::-webkit-scrollbar-thumb,
+        .dark #controls-panel-wrapper::-webkit-scrollbar-thumb {
+            background-color: #4b5563; /* gray-600 */
+            border: 2px solid #1f2937;
+        }
+
+        /* Webkit Scrollbar Overrides (Light Mode) */
         body::-webkit-scrollbar-track,
         #affected-areas-list-wrapper::-webkit-scrollbar-track,
         #controls-panel-wrapper::-webkit-scrollbar-track {
-            background: #1f2937; /* gray-800 */
-            border-radius: 4px; 
+            background: #f3f4f6; /* light gray-100 */
         }
 
         body::-webkit-scrollbar-thumb,
         #affected-areas-list-wrapper::-webkit-scrollbar-thumb,
         #controls-panel-wrapper::-webkit-scrollbar-thumb {
-            background-color: #4b5563; /* gray-600 */
-            border-radius: 4px; 
-            /* Simple border to match the background/track color */
-            border: 2px solid #1f2937; 
+            background-color: #9ca3af; /* light gray-400 */
+            border: 2px solid #f3f4f6;
         }
-
-        body::-webkit-scrollbar-thumb:hover,
-        #affected-areas-list-wrapper::-webkit-scrollbar-thumb:hover,
-        #controls-panel-wrapper::-webkit-scrollbar-thumb:hover {
-            background-color: #6b7280; /* gray-500 on hover */
-        }
-        
-        /* For Firefox: Uses implicit dimensions */
-        * {
-            /* Sets thumb color (#4b5563) and track color (#1f2937) */
-            scrollbar-color: #4b5563 #1f2937; 
-            scrollbar-width: thin;
-        }
-
         /* --- END SCROLLBAR STYLES --- */
 
-        /* Ensure Leaflet's popups use the Tailwind font and dark theme */
+        /* Ensure Leaflet's popups use the correct theme */
         .leaflet-popup-content-wrapper, .leaflet-popup-content {
             font-family: 'Inter', sans-serif;
             border-radius: 8px;
+            /* Light Mode Default */
+            background-color: white; 
+            color: #1f2937;
+        }
+        
+        /* Dark Mode Leaflet Overrides */
+        .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-content {
             background-color: #1f2937; /* gray-800 */
             color: #d1d5db; /* gray-300 */
         }
         
         .leaflet-popup-tip {
+            background-color: white;
+        }
+        
+        .dark .leaflet-popup-tip {
             background-color: #1f2937;
         }
         
-        /* Custom popup styling */
+        /* Custom popup styling - now relies on popup color */
         .popup-header {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #f9fafb;
-            border-bottom: 1px solid #374151;
+            color: #111827; /* Dark text default */
+            border-bottom: 1px solid #d1d5db;
             padding-bottom: 4px;
             margin-bottom: 6px;
+        }
+
+        .dark .popup-header {
+            color: #f9fafb; /* Light text default */
+            border-bottom: 1px solid #374151;
         }
         
         .popup-content-table {
@@ -104,6 +125,11 @@
         .popup-content-table td {
             padding: 2px 4px;
             font-size: 0.85rem;
+            color: #4b5563; /* Default light mode content text */
+        }
+
+        .dark .popup-content-table td {
+            color: #d1d5db; /* Dark mode content text */
         }
         
         .popup-content-table tr td:first-child {
@@ -112,62 +138,39 @@
             white-space: nowrap;
             padding-right: 12px;
         }
+        
+        /* Other custom styles remain, no change needed unless they conflict with Tailwind theme switches */
 
-        /* --- Custom styles for the 7-notch slider --- */
-        .custom-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent; /* Hide default track */
-            height: 8px; /* Ensure height is set */
+        /* Custom modal styles */
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        /* CUSTOM DROPDOWN ANIMATION STYLES */
+        #header-dropdown-menu,
+        #language-dropdown-menu {
+            /* Start state: invisible, fully collapsed vertically (scaleY(0)) */
+            visibility: hidden;
+            opacity: 0;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: visibility 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #header-dropdown-menu.is-open,
+        #language-dropdown-menu.is-open {
+            /* End state: visible, full height (scaleY(1)) */
+            visibility: visible;
+            opacity: 1;
+            transform: scaleY(1);
         }
         
-        .custom-slider::-webkit-slider-runnable-track {
-            height: 8px;
-            background: #4b5563; /* gray-600 */
-            border-radius: 4px;
-        }
-        
-        .custom-slider::-moz-range-track {
-            height: 8px;
-            background: #4b5563; /* gray-600 */
-            border-radius: 4px;
-        }
-
-        .custom-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            margin-top: -6px; /* Center thumb vertically */
-            width: 20px;
-            height: 20px;
-            background: #06b6d4; /* cyan-500 */
-            border-radius: 50%;
-            cursor: pointer;
-            border: 3px solid #1f2937; /* gray-800 border */
-            box-shadow: 0 0 0 2px #06b6d4; /* Extra cyan ring */
-            transition: background 0.15s ease-in-out;
-        }
-        .custom-slider:focus::-webkit-slider-thumb {
-            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.5); /* Focus ring */
-        }
-
-        .custom-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #06b6d4;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 3px solid #1f2937;
-            box-shadow: 0 0 0 2px #06b6d4;
-            transition: background 0.15s ease-in-out;
-        }
-        .custom-slider:focus::-moz-range-thumb {
-            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.5); /* Focus ring */
-        }
     </style>
 
-    <!-- Configure Tailwind -->
+    <!-- Configure Tailwind to use 'class' strategy for dark mode -->
     <script>
         tailwind.config = {
+            darkMode: 'class', 
             theme: {
                 extend: {
                     fontFamily: {
@@ -178,59 +181,124 @@
         }
     </script>
 </head>
-<body class="bg-gray-900 flex flex-col h-screen">
+<!-- Replaced bg-gray-900 with bg-gray-100 (light default) and dark:bg-gray-900 -->
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col min-h-screen overflow-y-auto">
 
-    <!-- Header -->
-    <header class="bg-gray-800 p-4 z-20 border-b border-gray-700">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-100 text-center">
-            HazeRadar: 3-Day Forecast
-        </h1>
+    <!-- Confirmation Modal (Replaces alert()) -->
+    <div id="confirmation-modal" class="modal fixed inset-0 z-50 bg-gray-900 bg-opacity-70 flex items-center justify-center invisible opacity-0">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-11/12 md:w-1/3 border border-gray-300 dark:border-gray-700">
+            <h3 id="modal-title" class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Message</h3>
+            <p id="modal-text" class="text-gray-700 dark:text-gray-300 mb-6"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-close-btn" class="px-4 py-2 bg-sky-600 text-white font-medium rounded-lg hover:bg-sky-700 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header (Navigation Bar) -->
+    <!-- Light default is bg-white, dark is bg-gray-800. Border/Text colors updated -->
+    <header class="bg-white dark:bg-gray-800 p-4 z-40 border-b border-gray-200 dark:border-gray-700 sticky top-0 shadow-lg relative">
+        <div class="w-full xl:max-w-7xl mx-auto flex justify-between items-center">
+            
+            <div class="flex-shrink-0 w-20 hidden md:block"></div>
+            
+            <!-- Text and icon colors updated to be dark default, light in dark mode -->
+            <button id="dropdown-toggle" class="flex items-center space-x-3 text-gray-800 dark:text-gray-100 hover:text-cyan-600 dark:hover:text-cyan-400 transition cursor-pointer p-1 rounded-lg focus:outline-none flex-shrink-0">
+                <img src="images/HazeRadarLogo.png" onerror="this.onerror=null; this.src='https://placehold.co/40x40/f3f4f6/06b6d4?text=HR'" alt="HazeRadar Logo" class="h-10 w-auto">
+                <span class="text-2xl md:text-3xl font-bold">
+                    HazeRadar
+                </span>
+                <svg id="dropdown-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1 transform transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+
+            <!-- Right Side Icons & Language Dropdown Container -->
+            <div class="flex items-center space-x-2 relative flex-shrink-0">
+                
+                <!-- 1. Theme Toggle Icon (Dark/Light) -->
+                <button id="theme-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition focus:outline-none">
+                    <!-- Moon Icon (Visible in Dark Mode) -->
+                    <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <!-- Sun Icon (Hidden initially) -->
+                    <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </button>
+                
+                <!-- 2. Language Toggle Icon -->
+                <button id="language-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M3 7h12M9 3v18m3-6h-2m4 0h2m-6-4h2M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </button>
+
+                <!-- Language Dropdown Menu (Light: bg-gray-100, Dark: bg-gray-700) -->
+                <nav id="language-dropdown-menu" class="absolute top-full right-0 z-30 w-40 mt-3 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-2xl overflow-hidden">
+                    <a href="#" data-lang="en" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition border-b border-gray-300 dark:border-gray-600">English</a>
+                    <a href="#" data-lang="id" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition border-b border-gray-300 dark:border-gray-600">Bahasa Indonesia</a>
+                    <a href="#" data-lang="hi" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition">Hindi</a>
+                </nav>
+            </div>
+            
+        </div>
+        
+        <!-- Main Navigation Dropdown (Light: bg-gray-100, Dark: bg-gray-700) -->
+        <nav id="header-dropdown-menu" class="absolute top-full left-0 right-0 z-30 w-full bg-gray-100 dark:bg-gray-700 shadow-2xl overflow-hidden">
+            <div class="w-full xl:max-w-7xl mx-auto">
+                <!-- Text and hover colors updated for light mode -->
+                <a href="#haze-prediction-section" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center">Haze Prediction</a>
+                <a href="#haze-metrics-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center">Key Matrix</a>
+                <a href="#photo-uploader-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown text-center">CloudVision</a>
+            </div>
+        </nav>
     </header>
 
-    <!-- Main Content Area: Now controls the vertical stacking of the two main rows -->
-    <main class="flex-1 flex justify-center items-start p-2 md:p-4 overflow-y-auto">
+    
+    <!-- Main Content Area -->
+    <main class="flex-1 flex justify-center items-start p-2 md:p-4"> 
         
-        <!-- Outer Wrapper: Stacks Row 1 (Map/Controls) and Row 2 (Cards) vertically -->
         <div class="w-full xl:max-w-7xl flex flex-col gap-4">
 
-            <!-- ROW 1 CONTAINER: Map (L) and Controls Panel (R) - Side-by-side on desktop -->
-            <div class="flex flex-col md:flex-row gap-4 flex-shrink-0">
+            <!-- ROW 1 CONTAINER: Map (L) and Controls Panel (R) -->
+            <div id="haze-prediction-section" class="flex flex-col md:flex-row gap-4 flex-shrink-0">
 
-                <!-- 1. Map Container (md:w-3/5, order-1) -->
-                <div id="map-wrapper" class="w-full relative h-[60vh] md:h-auto md:aspect-video rounded-xl shadow-2xl overflow-hidden bg-gray-800 md:w-3/5 order-1">
-                    <!-- Map div -->
+                <!-- 1. Map Container (bg-white dark:bg-gray-800) -->
+                <div id="map-wrapper" class="w-full relative h-[75vh] md:h-[75vh] rounded-xl shadow-2xl overflow-hidden bg-white dark:bg-gray-800 md:w-3/5 order-1">
                     <div id="map" class="absolute inset-0 z-10"></div>
                     
-                    <!-- Loading / Error Overlay -->
-                    <div id="message-overlay" class="absolute inset-0 z-20 bg-gray-900 bg-opacity-75 flex items-center justify-center backdrop-blur-sm">
-                        <div class="text-center p-6 bg-gray-800 rounded-lg shadow-xl">
-                            <div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
-                            <p id="message-text" class="text-lg font-medium text-gray-200 mt-4">Loading map data...</p>
+                    <!-- Loading / Error Overlay (bg-opacity-75 remains, but colors are updated) -->
+                    <div id="message-overlay" class="absolute inset-0 z-20 bg-gray-200 dark:bg-gray-900 bg-opacity-75 flex items-center justify-center backdrop-blur-sm">
+                        <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+                            <div id="loading-spinner" class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 dark:border-cyan-500 mx-auto"></div>
+                            <p id="message-text" class="text-lg font-medium text-gray-700 dark:text-gray-200 mt-4">Loading map data...</p>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 2. Unified Controls Panel (md:w-2/5, order-2) -->
-                <div id="controls-panel-wrapper" class="w-full md:w-2/5 bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0 order-2 md:overflow-y-auto">
+                <!-- 2. Unified Controls Panel (bg-white dark:bg-gray-800) -->
+                <div id="controls-panel-wrapper" class="w-full md:w-2/5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0 order-2 md:h-[75vh] md:overflow-y-auto">
                     
                     <!-- Prediction Timeline Header -->
-                    <h2 class="text-xl font-semibold text-cyan-400 mb-4 border-b border-gray-700 pb-2 flex items-center flex-shrink-0">
-                        <!-- Clock Icon for Timeline -->
+                    <h2 class="text-xl font-semibold text-cyan-600 dark:text-cyan-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Prediction Timeline
                     </h2>
                     
-                    <!-- Slider Region (Appears on BOTH mobile and desktop now) -->
-                    <div id="slider-region" class="p-4 bg-gray-700 rounded-lg mb-4 shadow-inner flex-shrink-0">
-                        <label for="notch-slider" class="block text-sm font-medium text-gray-300 mb-4">Current Time Selection: <span id="time-label" class="font-bold text-teal-300">12hr</span></label>
+                    <!-- Slider Region (bg-gray-100 dark:bg-gray-700) -->
+                    <div id="slider-region" class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg mb-4 shadow-inner flex-shrink-0">
+                        <label for="notch-slider" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Current Time Selection: <span id="time-label" class="font-bold text-teal-600 dark:text-teal-300">12hr</span></label>
                         <div class="relative pt-1">
-                            <!-- Single Slider input, used for both mobile/desktop -->
                             <input type="range" min="1" max="7" value="4" step="1" id="notch-slider" class="w-full custom-slider">
                             
-                            <!-- 7 Labels for 7 nodes - Added px-2 and pb-2 for padding -->
-                            <div class="flex justify-between text-xs pt-2 pb-2 px-2 text-gray-400">
+                            <!-- Labels adjusted for contrast -->
+                            <div class="flex justify-between text-xs pt-2 pb-2 px-2 text-gray-600 dark:text-gray-400">
                                 <span class="text-center">Now</span>
                                 <span class="text-center">3hr</span>
                                 <span class="text-center">6hr</span>
@@ -243,14 +311,13 @@
                     </div>
 
                     <!-- Affected Areas List -->
-                    <div class="mt-2 flex-shrink-0">
-                        <h3 class="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Affected Areas (Click to View)</h3>
-                        <!-- This div manages internal scrolling if the list gets too long -->
-                        <div id="affected-areas-list-wrapper" class="max-h-64 overflow-y-auto space-y-3 pb-4">
+                    <div class="mt-2 flex-shrink-0 flex-1 flex flex-col min-h-0">
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2 border-b border-gray-200 dark:border-gray-700 pb-1">Affected Areas (Click to View)</h3>
+                        <div id="affected-areas-list-wrapper" class="flex-1 overflow-y-auto space-y-3 pb-4">
                             <div id="affected-areas-list" class="space-y-3">
                                 <!-- Dynamic cards will be injected here by JavaScript -->
                             </div>
-                            <p id="no-cards-message" class="text-gray-400 italic text-center py-8 hidden">
+                            <p id="no-cards-message" class="text-gray-500 dark:text-gray-400 italic text-center py-8 hidden">
                                 No locations have been liked yet.
                             </p>
                         </div>
@@ -258,38 +325,101 @@
                 </div>
             </div>
 
-            <!-- ROW 2 CONTAINER: Haze Metrics Cards (Full Width, below map/controls) -->
-            <div id="haze-metrics-panel" class="w-full bg-gray-800 rounded-xl shadow-2xl p-4 flex-shrink-0">
-                <h3 class="text-xl font-semibold text-teal-400 mb-4 border-b border-gray-700 pb-2">Haze Metrics</h3>
+            <!-- ROW 2 CONTAINER: Haze Metrics Cards (bg-white dark:bg-gray-800) -->
+            <div id="haze-metrics-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex-shrink-0">
+                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">Haze Metrics</h3>
                 
-                <!-- 4 Square Cards Container -->
+                <!-- Card Backgrounds (bg-gray-100 dark:bg-gray-700) -->
                 <div id="square-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                        <p id="metric-current-haze" class="text-3xl font-bold text-cyan-400">Moderate</p>
-                        <p class="text-sm text-gray-300 text-center mt-1">Current Status</p>
+                    <div class="bg-gray-100 dark:bg-gray-700 px-4 py-6 rounded-xl flex flex-col justify-center items-center shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-default">
+                        <!-- Text Colors for metrics are kept vibrant -->
+                        <p id="metric-current-haze" class="text-3xl font-bold text-cyan-600 dark:text-cyan-400">Moderate</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 text-center mt-1">Current Status</p>
                     </div>
-                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                        <p id="metric-predicted-aqi" class="text-3xl font-bold text-teal-400">155</p>
-                        <p class="text-sm text-gray-300 text-center mt-1">Predicted AQI</p>
+                    <div class="bg-gray-100 dark:bg-gray-700 px-4 py-6 rounded-xl flex flex-col justify-center items-center shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-predicted-aqi" class="text-3xl font-bold text-teal-600 dark:text-teal-400">155</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 text-center mt-1">Predicted AQI</p>
                     </div>
-                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                        <p id="metric-wind-speed" class="text-3xl font-bold text-blue-400">12 km/h</p>
-                        <p class="text-sm text-gray-300 text-center mt-1">Wind Speed</p>
+                    <div class="bg-gray-100 dark:bg-gray-700 px-4 py-6 rounded-xl flex flex-col justify-center items-center shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-wind-speed" class="text-3xl font-bold text-blue-600 dark:text-blue-400">12 km/h</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 text-center mt-1">Wind Speed</p>
                     </div>
-                    <div class="bg-gray-700 p-3 rounded-xl aspect-square flex flex-col justify-center items-center shadow-md hover:bg-gray-600 transition cursor-default">
-                        <p id="metric-visibility" class="text-3xl font-bold text-purple-400">8.5 km</p>
-                        <p class="text-sm text-gray-300 text-center mt-1">Visibility</p>
+                    <div class="bg-gray-100 dark:bg-gray-700 px-4 py-6 rounded-xl flex flex-col justify-center items-center shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-default">
+                        <p id="metric-visibility" class="text-3xl font-bold text-purple-600 dark:text-purple-400">8.5 km</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-300 text-center mt-1">Visibility</p>
                     </div>
                 </div>
             </div>
+            
+            <!-- ROW 3 CONTAINER: CloudVision Insight (bg-white dark:bg-gray-800) -->
+            <div id="photo-uploader-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0">
+                <h3 class="text-xl font-semibold text-sky-600 dark:text-sky-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    CloudVision Insight
+                </h3>
+
+                <!-- Explanation Box (bg-gray-100 dark:bg-gray-700) -->
+                <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        Use CloudVision to see if you are in a safe environment.
+                    </p>
+                </div>
+                
+                <!-- Drag-and-Drop Area (border-gray-400 dark:border-gray-600) -->
+                <div id="drop-area" class="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-8 text-center transition duration-200 ease-in-out hover:border-sky-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">
+                    <input type="file" id="fileElem" multiple accept="image/*" class="hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        <span class="font-semibold text-sky-600 dark:text-sky-300" id="file-browse-link">Click to browse</span> or drag and drop
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG, or JPEG (Max 5MB per file)</p>
+                    <div id="file-list" class="mt-4 text-left space-y-2">
+                        <!-- Uploaded files will be listed here -->
+                    </div>
+                </div>
+                
+                <!-- Upload Button -->
+                <button id="upload-button" class="w-full mt-4 px-4 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 transition duration-150 ease-in-out disabled:bg-gray-500" disabled>
+                    Analyze Photo with CloudVision
+                </button>
+            </div>
         </div>
     </main>
+
+    <!-- TEAM INFO SECTION (Main text colors changed) -->
+    <section id="team-info-section" class="w-full py-16 md:py-24 relative overflow-hidden">
+        <div class="relative z-10 w-full xl:max-w-7xl mx-auto px-4 md:px-8">
+            <div class="md:w-1/2 md:ml-auto md:text-left text-center">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-4">Our Team & Mission</h2>
+                <p class="text-lg md:text-xl text-gray-200">
+                    HazeRadar is built by a dedicated team focused on environmental technology and data science. We strive to provide accurate, predictive modeling for smoke and haze events across Southeast Asia. Our platform leverages advanced satellite data and machine learning (CloudVision) to empower local communities with critical air quality information, promoting public health and informed decision-making.
+                </p>
+                <div class="mt-8">
+                    <a href="#haze-prediction-section" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-cyan-600 hover:bg-cyan-700 transition">
+                        Back to Map
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER (Uses bg-black as requested, text adjusted) -->
+    <footer class="bg-black p-4 border-t border-gray-800"> 
+        <div class="w-full xl:max-w-7xl mx-auto text-center text-sm text-gray-400">
+            &copy; 2025 HazeRadar. All rights reserved.
+        </div>
+    </footer>
 
     <script>
         // Define buffered bounds for Indonesia
         const INDONESIA_BOUNDS = [
             [-12, 90], 
-            [7, 145]   
+            [7, 145]  
         ];
         
         // Define the 7 time periods (mapping slider value 1-7 to a label)
@@ -311,16 +441,207 @@
             { id: 4, name: "Kota Denpasar", province: "Bali", lat: -8.6705, lng: 115.2127, aqi: 45, status: 'Good' },
             { id: 5, name: "Kabupaten Raja Ampat", province: "Papua Barat Daya", lat: -0.528, lng: 130.824, aqi: 22, status: 'Good' },
         ];
+        
+        // --- MODAL / MESSAGE BOX FUNCTIONS (REPLACES alert()) ---
+        function showMessage(title, text) {
+            const modal = document.getElementById('confirmation-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-text').innerHTML = text; // Use innerHTML for bold formatting
+            modal.classList.remove('invisible', 'opacity-0');
+            modal.classList.add('visible', 'opacity-100');
+        }
+
+        function hideMessage() {
+            const modal = document.getElementById('confirmation-modal');
+            modal.classList.remove('visible', 'opacity-100');
+            modal.classList.add('invisible', 'opacity-0');
+        }
+        // --- END MODAL FUNCTIONS ---
 
         document.addEventListener('DOMContentLoaded', function () {
             const mapContainer = document.getElementById('map');
             const messageOverlay = document.getElementById('message-overlay');
             const messageText = document.getElementById('message-text');
             const loadingSpinner = document.getElementById('loading-spinner');
-            // Single slider element
+            
             const slider = document.getElementById('notch-slider');
-            // Single time label element
             const timeLabel = document.getElementById('time-label');
+            
+            // UPLOADER ELEMENTS
+            const dropArea = document.getElementById('drop-area');
+            const fileElem = document.getElementById('fileElem');
+            const fileBrowseLink = document.getElementById('file-browse-link');
+            const fileList = document.getElementById('file-list');
+            const uploadButton = document.getElementById('upload-button');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // DROPDOWN ELEMENTS
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const headerDropdownMenu = document.getElementById('header-dropdown-menu');
+            const dropdownIcon = document.getElementById('dropdown-icon');
+            
+            // NEW LANGUAGE ELEMENTS
+            const languageToggle = document.getElementById('language-toggle');
+            const languageDropdownMenu = document.getElementById('language-dropdown-menu');
+            
+            // NEW THEME ELEMENTS
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIconMoon = document.getElementById('theme-icon-moon');
+            const themeIconSun = document.getElementById('theme-icon-sun');
+
+            // Set up main elements
+            const html = document.documentElement;
+            modalCloseBtn.addEventListener('click', hideMessage);
+            
+            let uploadedFiles = []; // Array to store files ready for upload
+            
+            // --- THEME TOGGLE LOGIC (Updated for Tailwind 'class' strategy) ---
+            
+            /** Loads theme preference from local storage or defaults to dark. */
+            function loadTheme() {
+                const isDarkMode = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (isDarkMode) {
+                    html.classList.add('dark');
+                    updateThemeIcons(true);
+                } else {
+                    html.classList.remove('dark');
+                    updateThemeIcons(false);
+                }
+            }
+
+            /** Updates the visible theme icon based on the mode. */
+            function updateThemeIcons(isDarkMode) {
+                if (isDarkMode) {
+                    // Dark mode is active: Show Moon (to suggest switching to Light)
+                    themeIconMoon.classList.remove('hidden');
+                    themeIconSun.classList.add('hidden');
+                } else {
+                    // Light mode is active: Show Sun (to suggest switching to Dark)
+                    themeIconMoon.classList.add('hidden');
+                    themeIconSun.classList.remove('hidden');
+                }
+            }
+
+            /** Toggles the theme between light and dark. */
+            function toggleTheme() {
+                const isCurrentlyDark = html.classList.contains('dark');
+                
+                if (isCurrentlyDark) {
+                    // Switch to Light Mode
+                    html.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                    updateThemeIcons(false);
+                    console.log("Switched to Light Mode");
+                } else {
+                    // Switch to Dark Mode
+                    html.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    updateThemeIcons(true);
+                    console.log("Switched to Dark Mode");
+                }
+            }
+            
+            // Initialize theme on load
+            loadTheme();
+            themeToggle.addEventListener('click', toggleTheme);
+            // --- END THEME TOGGLE LOGIC ---
+
+            // --- NAVIGATION LOGIC ---
+
+            // Main Menu Toggle (Full Width)
+            function toggleDropdown(event) {
+                event.stopPropagation(); 
+                
+                const isOpen = headerDropdownMenu.classList.contains('is-open');
+                
+                if (isOpen) {
+                    headerDropdownMenu.classList.remove('is-open');
+                    dropdownIcon.classList.remove('rotate-180');
+                } else {
+                    // Close language menu if opening main menu
+                    if (languageDropdownMenu.classList.contains('is-open')) {
+                        languageDropdownMenu.classList.remove('is-open');
+                    }
+                    headerDropdownMenu.classList.add('is-open');
+                    dropdownIcon.classList.add('rotate-180');
+                }
+            }
+            
+            // Language Menu Toggle (Small Width)
+            function toggleLanguageDropdown(event) {
+                event.stopPropagation();
+                
+                const isOpen = languageDropdownMenu.classList.contains('is-open');
+                
+                if (isOpen) {
+                    languageDropdownMenu.classList.remove('is-open');
+                } else {
+                    // Close main menu if opening language menu
+                    if (headerDropdownMenu.classList.contains('is-open')) {
+                        toggleDropdown({stopPropagation: () => {}}); // Close main menu
+                    }
+                    languageDropdownMenu.classList.add('is-open');
+                }
+            }
+
+            // Event listeners for the toggles
+            dropdownToggle.addEventListener('click', toggleDropdown);
+            languageToggle.addEventListener('click', toggleLanguageDropdown);
+
+            // Close all dropdowns if the user clicks anywhere else on the document
+            document.addEventListener('click', function(event) {
+                const isClickOnToggle = dropdownToggle.contains(event.target);
+                const isClickOnMenu = headerDropdownMenu.contains(event.target);
+                
+                const isClickOnLangToggle = languageToggle.contains(event.target);
+                const isClickOnLangMenu = languageDropdownMenu.contains(event.target);
+
+                // Close main menu if open and click is outside
+                if (headerDropdownMenu.classList.contains('is-open') && !isClickOnToggle && !isClickOnMenu) {
+                    headerDropdownMenu.classList.remove('is-open');
+                    dropdownIcon.classList.remove('rotate-180');
+                }
+
+                // Close language menu if open and click is outside
+                if (languageDropdownMenu.classList.contains('is-open') && !isClickOnLangToggle && !isClickOnLangMenu) {
+                    languageDropdownMenu.classList.remove('is-open');
+                }
+            });
+
+            // Smooth scrolling logic
+            function smoothScroll(event) {
+                event.preventDefault();
+                
+                // Close the menu immediately after a link is clicked
+                if (headerDropdownMenu.classList.contains('is-open')) {
+                    headerDropdownMenu.classList.remove('is-open');
+                    dropdownIcon.classList.remove('rotate-180');
+                }
+
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+
+                if (targetElement) {
+                    // Offset by 80px to account for the fixed header height
+                    const headerOffset = 80; 
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: "smooth"
+                    });
+                }
+            }
+
+            // Apply smooth scroll listeners to the main dropdown links
+            document.querySelectorAll('.nav-link-dropdown').forEach(link => {
+                link.addEventListener('click', smoothScroll);
+            });
+            
+            // --- END NAVIGATION LOGIC ---
+            
+            // --- Initialization and Map Setup (Existing Logic) ---
 
             if (!mapContainer) {
                 console.error("Map container 'map' not found.");
@@ -339,51 +660,41 @@
             }).addTo(map);
 
 
-            // --- SLIDER & UI UPDATE LOGIC ---
+            // --- SLIDER & UI UPDATE LOGIC (Existing Logic) ---
             function updatePredictionUI(timePeriod) {
-                // 1. Update the display label
                 timeLabel.textContent = timePeriod;
 
-                // 2. Mock: Update the metric cards based on the selected time
                 const sliderValue = parseInt(slider.value);
-                // Example shift: +20 AQI per step past 12hr
                 const currentAQI = 100 + (sliderValue - 4) * 20 + Math.floor(Math.random() * 10); 
                 document.getElementById('metric-predicted-aqi').textContent = currentAQI;
                 
                 let status = 'Moderate';
-                let statusColor = 'text-yellow-400'; // Default for Moderate
+                let statusColor = 'text-yellow-600 dark:text-yellow-400'; 
                 
-                if (currentAQI > 200) { status = 'Hazardous'; statusColor = 'text-purple-400'; }
-                else if (currentAQI > 150) { status = 'Unhealthy'; statusColor = 'text-red-400'; }
-                else if (currentAQI > 100) { status = 'Moderate'; statusColor = 'text-yellow-400'; }
-                else { status = 'Good'; statusColor = 'text-teal-400'; }
+                if (currentAQI > 200) { status = 'Hazardous'; statusColor = 'text-purple-600 dark:text-purple-400'; }
+                else if (currentAQI > 150) { status = 'Unhealthy'; statusColor = 'text-red-600 dark:text-red-400'; }
+                else if (currentAQI > 100) { status = 'Moderate'; statusColor = 'text-yellow-600 dark:text-yellow-400'; }
+                else { status = 'Good'; statusColor = 'text-teal-600 dark:text-teal-400'; }
 
                 const statusEl = document.getElementById('metric-current-haze');
                 statusEl.textContent = status;
-                // Ensures color palette consistency for status text
                 statusEl.className = `text-3xl font-bold ${statusColor}`; 
-
-                // 3. Update map layer visualization (Placeholder - actual implementation needed)
+                
                 console.log(`Map visualization needs update for time: ${timePeriod}`);
             }
 
-            // Function to handle slider change
             function handleSliderChange(event) {
                 const sliderValue = event.target.value;
                 const timePeriod = TIME_PERIODS[sliderValue];
                 updatePredictionUI(timePeriod);
             }
 
-            // Attach event listener to the single slider
             slider.addEventListener('input', handleSliderChange);
-            
-            // Initialize UI with default value
             updatePredictionUI(TIME_PERIODS[slider.value]);
 
 
-            // --- MAP & GEOJSON LOGIC ---
+            // --- MAP & GEOJSON LOGIC (Existing Logic) ---
 
-            // Add a bubble for Bandung 
             const bandungCoords = [-6.9175, 107.6191];
             L.circleMarker(bandungCoords, {
                 radius: 10,
@@ -395,41 +706,36 @@
             .addTo(map)
             .bindPopup("<div class='popup-header'>Bandung (Jawa Barat)</div><p>Mock AQI: 102 (Moderate)</p>");
 
-            // 3. Define styles for the GeoJSON layer
             const defaultStyle = {
-                color: "#a5f3fc",       // cyan-200 (border)
+                color: "#a5f3fc", 
                 weight: 1,
                 opacity: 0.8,
-                fillColor: "#14b8a6",   // teal-500 (fill)
+                fillColor: "#14b8a6", 
                 fillOpacity: 0.4
             };
 
             const highlightStyle = {
-                color: "#fde047",       // yellow-300 (border)
+                color: "#fde047", 
                 weight: 2,
                 opacity: 1,
-                fillColor: "#facc15",   // yellow-400 (fill)
+                fillColor: "#facc15", 
                 fillOpacity: 0.7
             };
             
             let geoJsonLayer;
 
-            // 4. Function to run for each feature (Popup and Interaction logic)
             function onEachFeature(feature, layer) {
                 let popupContent = '';
                 const props = feature.properties;
                 const name = props.NAMA_KAB || props.NAMA_KOTA || props.NAME || props.nama || props.Name;
 
-                // Build Popup Content - REVERTED to show detailed properties table
                 if (name) { popupContent += `<div class="popup-header">${name}</div>`; } 
                 else { popupContent += `<div class="popup-header">GeoJSON Feature</div>`; }
                 
                 if (props) {
                     popupContent += '<table class="popup-content-table">';
                     for (const key in props) {
-                        // Skip system/internal properties often found in GeoJSON files
                         if (key.startsWith('_') || key === 'id' || key === 'bbox') continue;
-
                         popupContent += `
                             <tr>
                                 <td>${key}</td>
@@ -444,7 +750,6 @@
                 
                 layer.bindPopup(popupContent, { maxHeight: 200 });
 
-                // Interaction
                 layer.on({
                     mouseover: function (e) {
                         const l = e.target;
@@ -459,12 +764,11 @@
                         }
                     },
                     click: function (e) {
-                        map.fitBounds(e.target.getBounds());
+                        map.flyTo(e.latlng, 10, { duration: 0.8 });
                     }
                 });
             }
 
-            // --- Card Rendering Logic ---
             function renderAffectedAreas(data) {
                 const listContainer = document.getElementById('affected-areas-list');
                 const noCardsMessage = document.getElementById('no-cards-message');
@@ -477,37 +781,34 @@
                 noCardsMessage.classList.add('hidden');
                 
                 data.forEach(item => {
-                    const statusClass = item.status === 'Unhealthy' ? 'text-red-400' : 
-                                        item.status === 'Moderate' ? 'text-yellow-400' : 'text-teal-400';
-                                        
+                    const statusClass = item.status === 'Unhealthy' ? 'text-red-600 dark:text-red-400' : 
+                                            item.status === 'Moderate' ? 'text-yellow-600 dark:text-yellow-400' : 'text-teal-600 dark:text-teal-400';
+                                            
                     const cardHtml = `
                         <div data-lat="${item.lat}" data-lng="${item.lng}"
-                             class="card-item bg-gray-700 hover:bg-gray-600 transition duration-150 p-3 rounded-lg cursor-pointer flex justify-between items-center group shadow-md hover:shadow-lg">
+                            class="card-item bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-150 p-3 rounded-lg cursor-pointer flex justify-between items-center group shadow-md hover:shadow-lg">
                             <div>
-                                <p class="text-gray-50 font-semibold">${item.name}</p>
-                                <p class="text-sm text-gray-300">${item.province}</p>
+                                <p class="text-gray-900 dark:text-gray-50 font-semibold">${item.name}</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">${item.province}</p>
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-bold ${statusClass}">${item.status}</p>
-                                <p class="text-xs text-gray-400">AQI: ${item.aqi}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">AQI: ${item.aqi}</p>
                             </div>
                         </div>
                     `;
                     listContainer.insertAdjacentHTML('beforeend', cardHtml);
                 });
 
-                // Add event listeners to the new cards for map interaction
                 document.querySelectorAll('.card-item').forEach(card => {
                     card.addEventListener('click', function() {
                         const lat = parseFloat(this.getAttribute('data-lat'));
                         const lng = parseFloat(this.getAttribute('data-lng'));
                         
-                        // Fly to the location on the map with a smooth animation
                         map.flyTo([lat, lng], 10, {
                             duration: 1.5
                         });
                         
-                        // Simple visual feedback on click
                         this.classList.add('ring-4', 'ring-cyan-500', 'ring-opacity-50');
                         setTimeout(() => {
                             this.classList.remove('ring-4', 'ring-cyan-500', 'ring-opacity-50');
@@ -515,41 +816,33 @@
                     });
                 });
             }
-            // --- End Card Rendering Logic ---
+
 
             // 5. Load the GeoJSON file
             async function loadGeoJson() {
                 try {
-                    // NOTE: This relies on the 'kabupaten.JSON' file being available in the environment.
                     const response = await fetch('kabupaten.JSON');
                     
                     if (!response.ok) {
-                        // Throw a specific error if the GeoJSON file is not found or inaccessible
                         throw new Error(`HTTP error! status: ${response.status}. The GeoJSON file 'kabupaten.JSON' could not be loaded.`);
                     }
                     
                     const data = await response.json();
                     
-                    // Create the GeoJSON layer
                     geoJsonLayer = L.geoJSON(data, {
                         style: defaultStyle,
                         onEachFeature: onEachFeature
                     }).addTo(map);
                     
-                    // Zoom the map to fit the loaded data
                     map.fitBounds(geoJsonLayer.getBounds());
                     
-                    // 1. Set the fixed, buffered bounds
                     map.setMaxBounds(INDONESIA_BOUNDS);
                     
-                    // 2. Set the current zoom level after fitting as the minimum zoom level.
                     const minZoomLevel = map.getZoom();
                     map.setMinZoom(minZoomLevel);
                     
-                    // Hide loading overlay first, so the map container settles to its final size
                     messageOverlay.style.display = 'none';
 
-                    // *** CRITICAL FIX: Invalidate size after layout settles ***
                     map.invalidateSize(); 
 
                 } catch (error) {
@@ -564,6 +857,190 @@
             // Start loading the data and rendering affected areas
             loadGeoJson();
             renderAffectedAreas(affectedAreasData);
+
+            // --- FILE UPLOADER LOGIC ---
+            
+            // Helper function to format file size
+            function formatBytes(bytes, decimals = 2) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            }
+
+            // Renders the list of files to be uploaded
+            function renderFileList() {
+                fileList.innerHTML = '';
+                if (uploadedFiles.length === 0) {
+                    uploadButton.disabled = true;
+                    // Update button text when no files are present
+                    uploadButton.textContent = 'Analyze Photo with CloudVision';
+                    return;
+                }
+                
+                uploadButton.disabled = false;
+                // Update button text when files are present
+                uploadButton.textContent = `Analyze ${uploadedFiles.length} Photo${uploadedFiles.length > 1 ? 's' : ''}`;
+
+                uploadedFiles.forEach((file, index) => {
+                    const listItem = document.createElement('div');
+                    // Background and text colors updated
+                    listItem.className = 'flex items-center justify-between p-2 bg-gray-200 dark:bg-gray-600 rounded-lg shadow-inner';
+                    listItem.innerHTML = `
+                        <div class="flex items-center min-w-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 dark:text-green-400 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm text-gray-800 dark:text-gray-100 truncate">${file.name}</span>
+                        </div>
+                        <div class="flex items-center flex-shrink-0 ml-4">
+                            <span class="text-xs text-gray-600 dark:text-gray-300 mr-3">${formatBytes(file.size)}</span>
+                            <!-- Button colors updated -->
+                            <button data-index="${index}" class="remove-file-btn p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-300 dark:hover:bg-gray-500 transition duration-150">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    fileList.appendChild(listItem);
+                });
+
+                // Attach remove event listeners
+                document.querySelectorAll('.remove-file-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const indexToRemove = parseInt(this.getAttribute('data-index'));
+                        uploadedFiles.splice(indexToRemove, 1);
+                        renderFileList();
+                    });
+                });
+            }
+
+            // Process files from either drag/drop or input click
+            function handleFiles(files) {
+                const maxFiles = 3;
+                const maxSizeMB = 5;
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    if (!file.type.startsWith('image/')) {
+                         showMessage("File Type Error", `File ${file.name} is not a supported image type (PNG/JPG/JPEG).`);
+                        continue;
+                    }
+                    
+                    if (file.size > maxSizeBytes) {
+                         showMessage("File Size Limit", `File ${file.name} exceeds the ${maxSizeMB}MB limit.`);
+                        continue;
+                    }
+                    
+                    if (uploadedFiles.length < maxFiles) {
+                        uploadedFiles.push(file);
+                    } else {
+                        showMessage("Limit Reached", `Maximum of ${maxFiles} files reached. Cannot add more.`);
+                        break;
+                    }
+                }
+                
+                // Clear the file input to allow uploading the same file again if removed
+                fileElem.value = ''; 
+                renderFileList();
+            }
+
+            // --- API INTEGRATION FUNCTION ---
+            async function uploadFile() {
+                if (uploadedFiles.length === 0) {
+                    showMessage("Analysis Required", "Please select files before attempting AI analysis.");
+                    return;
+                }
+
+                const originalButtonText = uploadButton.textContent;
+                uploadButton.textContent = 'Analyzing...';
+                uploadButton.disabled = true;
+
+                // --- MOCK API CALL START ---
+                await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate network latency
+
+                let mockAQI = 0;
+                let safetyMessage = "";
+
+                if (uploadedFiles.length === 3) {
+                    mockAQI = 168;
+                    safetyMessage = "AQI determined as **Unhealthy**. Outdoor activity is strongly discouraged. Minimize exposure and consider wearing a high-efficiency mask (N95 or higher).";
+                } else if (uploadedFiles.length === 2) {
+                    mockAQI = 115;
+                    safetyMessage = "AQI determined as **Unhealthy for Sensitive Groups**. Limit prolonged outdoor exertion. Individuals with respiratory conditions should remain indoors.";
+                } else { // 1 file
+                    mockAQI = 72;
+                    safetyMessage = "AQI determined as **Moderate**. Air quality is acceptable; however, unusually sensitive people should consider limiting prolonged outdoor exertion.";
+                }
+                
+                showMessage(
+                    "CloudVision Analysis Complete (AQI: " + mockAQI + ")", 
+                    safetyMessage
+                );
+                
+                uploadedFiles = [];
+                // --- MOCK API CALL END ---
+
+                // 5. Reset UI
+                uploadButton.textContent = originalButtonText; 
+                renderFileList(); 
+            }
+            // --- END API INTEGRATION FUNCTION ---
+
+
+            // Drag-and-Drop Handlers (Existing Logic)
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropArea.classList.add('border-sky-500', 'bg-gray-200', 'dark:bg-gray-700');
+            }
+
+            function unhighlight(e) {
+                dropArea.classList.remove('border-sky-500', 'bg-gray-200', 'dark:bg-gray-700');
+            }
+
+            dropArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+            
+            // Click to browse handler
+            fileBrowseLink.addEventListener('click', function() {
+                fileElem.click();
+            });
+
+            // File Input Change Handler
+            fileElem.addEventListener('change', function(e) {
+                handleFiles(e.target.files);
+            });
+            
+            // Upload Button Handler 
+            uploadButton.addEventListener('click', uploadFile);
+
+            renderFileList(); // Initialize the empty file list
         });
     </script>
 
