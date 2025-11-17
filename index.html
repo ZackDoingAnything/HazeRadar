@@ -4,10 +4,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="title">HazeRadar: 3-Day Smoke Prediction</title>
     
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
+    <!-- UPDATED: Favicon/ICO paths adjusted to point to the 'ico' folder -->
+    <link rel="apple-touch-icon" sizes="180x180" href="ico/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="ico/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="ico/favicon-16x16.png">
+    <link rel="manifest" href="ico/site.webmanifest">
+    <!-- END UPDATED: Favicon paths -->
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -250,7 +252,6 @@
     <div id="confirmation-modal" class="modal fixed inset-0 z-50 bg-gray-900 bg-opacity-70 flex items-center justify-center invisible opacity-0">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-11/12 md:w-1/3 border border-gray-300 dark:border-gray-700">
             <h3 id="modal-title" class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4" data-i18n="api_title_message">Message</h3>
-            <p id="modal-text" class="text-gray-700 dark:text-gray-300 mb-6"></p>
             <div class="flex justify-end space-x-3">
                 <button id="modal-close-btn" class="px-4 py-2 bg-sky-600 text-white font-medium rounded-lg hover:bg-sky-700 transition" data-i18n="modal_close">
                     Close
@@ -264,7 +265,7 @@
             
             <div class="flex-shrink-0 w-20 hidden md:block"></div>
             
-            <button id="dropdown-toggle" class="flex items-center space-x-3 text-gray-800 dark:text-gray-100 hover:text-cyan-600 dark:hover:text-cyan-400 transition cursor-pointer p-1 rounded-lg focus:outline-none flex-shrink-0">
+            <button id="dropdown-toggle" class="flex items-center space-x-3 text-gray-800 dark:text-gray-100 hover:text-orange-600 dark:hover:text-orange-400 transition cursor-pointer p-1 rounded-lg focus:outline-none flex-shrink-0">
                 <img src="images/HazeRadarLogo.png" onerror="this.onerror=null; this.src='https://placehold.co/40x40/f3f4f6/06b6d4?text=HR'" alt="HazeRadar Logo" class="h-10 w-auto">
                 <span class="text-2xl md:text-3xl font-bold">
                     HazeRadar
@@ -276,7 +277,7 @@
 
             <div class="flex items-center space-x-2 relative flex-shrink-0">
                 
-                <button id="theme-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition focus:outline-none">
+                <button id="theme-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-orange-600 dark:hover:text-orange-400 transition focus:outline-none">
                     <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
@@ -285,16 +286,16 @@
                     </svg>
                 </button>
                 
-                <button id="language-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition focus:outline-none">
+                <button id="language-toggle" class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-orange-600 dark:hover:text-orange-400 transition focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M3 7h12M9 3v18m3-6h-2m4 0h2m-6-4h2M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </button>
 
                 <nav id="language-dropdown-menu" class="absolute top-full right-0 z-30 w-40 mt-3 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-2xl overflow-hidden">
-                    <a href="#" data-lang="en" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition border-b border-gray-300 dark:border-gray-600">English</a>
-                    <a href="#" data-lang="id" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition border-b border-gray-300 dark:border-gray-600">Bahasa Indonesia</a>
-                    <a href="#" data-lang="hi" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition">Hindi</a>
+                    <a href="#" data-lang="en" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition border-b border-gray-300 dark:border-gray-600">English</a>
+                    <a href="#" data-lang="id" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition border-b border-gray-300 dark:border-gray-600">Bahasa Indonesia</a>
+                    <a href="#" data-lang="jv" class="block px-4 py-2 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition">Javanese</a> <!-- Changed from hi/Hindi -->
                 </nav>
             </div>
             
@@ -302,9 +303,9 @@
         
         <nav id="header-dropdown-menu" class="absolute top-full left-0 right-0 z-30 w-full bg-gray-100 dark:bg-gray-700 shadow-2xl overflow-hidden">
             <div class="w-full xl:max-w-7xl mx-auto">
-                <a href="#haze-prediction-section" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center" data-i18n="nav_haze_prediction">Haze Prediction</a>
-                <a href="#haze-metrics-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center" data-i18n="nav_key_matrix">Key Matrix</a>
-                <a href="#photo-uploader-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition nav-link-dropdown text-center" data-i18n="nav_cloud_vision">CloudVision</a>
+                <a href="#haze-prediction-section" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center" data-i18n="nav_haze_prediction">Haze Prediction</a>
+                <a href="#haze-metrics-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition nav-link-dropdown border-b border-gray-300 dark:border-gray-600 text-center" data-i18n="nav_key_matrix">Key Matrix</a>
+                <a href="#photo-uploader-panel" class="block px-6 py-3 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-orange-600 dark:hover:text-orange-400 transition nav-link-dropdown text-center" data-i18n="nav_cloud_vision">CloudVision</a>
             </div>
         </nav>
     </header>
@@ -329,7 +330,8 @@
                 
                 <div id="controls-panel-wrapper" class="w-full md:w-2/5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0 order-2 md:h-[75vh] md:overflow-y-auto">
                     
-                    <h2 class="text-xl font-semibold text-cyan-600 dark:text-cyan-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center flex-shrink-0" data-i18n="timeline_header">
+                    <!-- UPDATED HEADER COLOR -->
+                    <h2 class="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center flex-shrink-0" data-i18n="timeline_header">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -367,7 +369,8 @@
             </div>
 
             <div id="haze-metrics-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex-shrink-0">
-                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2" data-i18n="metrics_header">Haze Metrics</h3>
+                <!-- UPDATED HEADER COLOR -->
+                <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2" data-i18n="metrics_header">Haze Metrics</h3>
                 
                 <div id="square-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="bg-gray-100 dark:bg-gray-700 px-4 py-6 rounded-xl flex flex-col justify-center items-center shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition cursor-default">
@@ -389,39 +392,80 @@
                 </div>
             </div>
             
-            <div id="photo-uploader-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0">
-                <h3 class="text-xl font-semibold text-sky-600 dark:text-sky-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center" data-i18n="cv_header">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    CloudVision Insight
-                </h3>
+            <!-- START: WRAPPER FOR SIDE-BY-SIDE PANELS (MOBILE STACKS, MD+ IS GRID) -->
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                
+                <div id="photo-uploader-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0">
+                    <!-- UPDATED HEADER COLOR -->
+                    <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center" data-i18n="cv_header">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        CloudVision Insight
+                    </h3>
 
-                <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
-                    <p class="text-sm text-gray-700 dark:text-gray-300" data-i18n="cv_explanation">
-                        Use CloudVision to see if you are in a safe environment.
-                    </p>
+                    <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                        <p class="text-sm text-gray-700 dark:text-gray-300" data-i18n="cv_explanation">
+                            Use CloudVision to see if you are in a safe environment.
+                        </p>
+                    </div>
+                    
+                    <!-- UPDATED: Added min-h-52 to match initial size of Haze Insight image -->
+                    <div id="drop-area" class="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-8 text-center transition duration-200 ease-in-out hover:border-sky-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer min-h-52" onclick="fileElem.click()">
+                        <input type="file" id="fileElem" multiple accept="image/*" class="hidden">
+                        
+                        <!-- ORIGINAL FILE UPLOAD SVG ICON -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-sky-600 dark:text-sky-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        
+                        <p class="mt-2 text-sm text-gray-700 dark:text-gray-300 pointer-events-none">
+                            <span class="font-semibold text-sky-600 dark:text-sky-300" id="file-browse-link" data-i18n="cv_browse_link">Click to browse</span> 
+                            <span data-i18n="cv_drag_drop">or drag and drop</span>
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 pointer-events-none" data-i18n="cv_file_type">PNG, JPG, or JPEG (Max 5MB per file)</p>
+                        <div id="file-list" class="mt-4 text-left space-y-2">
+                            </div>
+                    </div>
+                    
+                    <!-- UPDATED BUTTON COLOR -->
+                    <button id="upload-button" class="w-full mt-4 px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-150 ease-in-out disabled:bg-gray-500" disabled data-i18n="cv_button_analyze">
+                        Analyze Photo with CloudVision
+                    </button>
                 </div>
                 
-                <div id="drop-area" class="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-8 text-center transition duration-200 ease-in-out hover:border-sky-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">
-                    <input type="file" id="fileElem" multiple accept="image/*" class="hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                        <span class="font-semibold text-sky-600 dark:text-sky-300" id="file-browse-link" data-i18n="cv_browse_link">Click to browse</span> 
-                        <span data-i18n="cv_drag_drop">or drag and drop</span>
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" data-i18n="cv_file_type">PNG, JPG, or JPEG (Max 5MB per file)</p>
-                    <div id="file-list" class="mt-4 text-left space-y-2">
-                        </div>
+                <!-- HAZE INSIGHT PANEL -->
+                <div id="haze-insight-panel" class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 flex flex-col flex-shrink-0">
+                    <!-- HEADER COLOR ALREADY ORANGE, standardizing dark mode -->
+                    <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center" data-i18n="haze_insight_header">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Haze Insight
+                    </h3>
+
+                    <!-- 1. Descriptive Box (mimicking CloudVision) -->
+                    <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                        <p class="text-sm text-gray-700 dark:text-gray-300" data-i18n="haze_insight_text">
+                            Simulate your own smoke prediction.
+                        </p>
+                    </div>
+                    
+                    <!-- 2. Image/Placeholder (Sizing Adjusted: h-56 for tighter match) -->
+                    <img src="https://placehold.co/400x224/f97316/ffffff?text=SIMULATION+MAP+PREVIEW"
+                         onerror="this.onerror=null; this.src='https://placehold.co/400x224/f97316/ffffff?text=SIMULATION+MAP+PREVIEW'"
+                         alt="Simulation Map Preview"
+                         class="mx-auto w-full object-cover h-56 rounded-lg shadow-md mb-6"
+                    />
+                    
+                    <!-- 3. Button -->
+                    <a href="simulation.html" class="w-full px-6 py-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-150 ease-in-out text-center" data-i18n="haze_insight_button">
+                        Start Simulation Tool
+                    </a>
                 </div>
-                
-                <button id="upload-button" class="w-full mt-4 px-4 py-2 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 transition duration-150 ease-in-out disabled:bg-gray-500" disabled data-i18n="cv_button_analyze">
-                    Analyze Photo with CloudVision
-                </button>
             </div>
+            <!-- END: WRAPPER FOR SIDE-BY-SIDE PANELS -->
         </div>
     </main>
 
@@ -437,7 +481,8 @@
                 HazeRadar is built by a dedicated team focused on environmental technology and data science. We strive to provide accurate, predictive modeling for smoke and haze events across Southeast Asia. Our platform leverages advanced satellite data and machine learning (CloudVision) to empower local communities with critical air quality information, promoting public health and informed decision-decision-making.
             </p>
             <div class="mt-8">
-                <a href="#haze-prediction-section" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-cyan-600 hover:bg-cyan-700 transition" data-i18n="footer_back_to_map">
+                <!-- UPDATED BUTTON COLOR -->
+                <a href="#haze-prediction-section" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-orange-600 hover:bg-orange-700 transition" data-i18n="footer_back_to_map">
                     Back to Map
                 </a>
             </div>
@@ -489,8 +534,13 @@
                 'cv_drag_drop': 'or drag and drop',
                 'cv_file_type': 'PNG, JPG, or JPEG (Max 5MB per file)',
                 'cv_button_analyze': 'Analyze Photo with CloudVision',
-                'cv_button_analyze_count': 'Analyze {count} Photo', 
+                'cv_button_analyze_count': 'Analyze {count} Photo',
                 'api_title_analyzing': 'Analyzing...',
+                
+                // NEW HAZE INSIGHT KEYS
+                'haze_insight_header': 'Haze Insight',
+                'haze_insight_text': 'Simulate your own smoke prediction.',
+                'haze_insight_button': 'Start Simulation Tool',
                 
                 // FOOTER & OTHER
                 'footer_mission_header': 'Our Team & Mission',
@@ -542,6 +592,11 @@
                 'cv_button_analyze_count': 'Analisis {count} Foto',
                 'api_title_analyzing': 'Menganalisis...',
                 
+                // NEW HAZE INSIGHT KEYS
+                'haze_insight_header': 'Wawasan Kabut Asap',
+                'haze_insight_text': 'Simulasikan prediksi asap Anda sendiri.',
+                'haze_insight_button': 'Mulai Alat Simulasi',
+                
                 'footer_mission_header': 'Tim & Misi Kami',
                 'footer_mission_text': 'HazeRadar dibangun oleh tim berdedikasi yang berfokus pada teknologi lingkungan dan ilmu data. Kami berusaha untuk menyediakan pemodelan prediksi yang akurat untuk peristiwa asap dan kabut di seluruh Asia Tenggara. Platform kami memanfaatkan data satelit canggih dan pembelajaran mesin (CloudVision) untuk memberdayakan komunitas lokal dengan informasi kualitas udara yang penting, mempromosikan kesehatan masyarakat dan pengambilan keputusan yang terinformasi.',
                 'footer_back_to_map': 'Kembali ke Peta',
@@ -557,53 +612,58 @@
                 'api_title_complete': 'Analisis CloudVision Selesai (AQI: {aqi})',
                 'api_title_message': 'Pesan',
             },
-            // Hindi (hi) - Example
-            hi: {
-                'title': 'हेज़रडार: 3-दिन का धुएँ का पूर्वानुमान',
-                'nav_haze_prediction': 'धुएँ का पूर्वानुमान',
-                'nav_key_matrix': 'मुख्य मापदंड',
-                'nav_cloud_vision': 'क्लाउडविजन',
+            // Javanese (jv) - Replacing Hindi
+            jv: {
+                'title': 'HazeRadar: Predhiksi Asep 3 Dinten',
+                'nav_haze_prediction': 'Predhiksi Asep',
+                'nav_key_matrix': 'Matriks Utama',
+                'nav_cloud_vision': 'CloudVision',
                 
-                'timeline_header': 'पूर्वानुमान समयरेखा',
-                'time_now': 'अभी',
-                'time_3hr': '3 घंटा',
-                'time_6hr': '6 घंटा',
-                'time_12hr': '12 घंटा',
-                'time_1d': '1 दिन',
-                'time_2d': '2 दिन',
-                'time_3d': '3 दिन',
-                'area_list_header': 'प्रभावित क्षेत्र (देखने के लिए क्लिक करें)',
-                'area_list_empty': 'अभी तक कोई स्थान पसंद नहीं किया गया है।',
+                'timeline_header': 'Garis Wektu Predhiksi',
+                'time_now': 'Saiki',
+                'time_3hr': '3 jam',
+                'time_6hr': '6 jam',
+                'time_12hr': '12 jam',
+                'time_1d': '1 dinten',
+                'time_2d': '2 dinten',
+                'time_3d': '3 dinten',
+                'area_list_header': 'Wilayah Kena (Klik Kanggo Delok)',
+                'area_list_empty': 'Durung ana panggonan sing disenengi.',
 
-                'metrics_header': 'धुंध मेट्रिक्स',
-                'metric_current_status': 'वर्तमान स्थिति',
-                'metric_predicted_aqi': 'अनुमानित AQI',
-                'metric_wind_speed': 'हवा की गति',
-                'metric_visibility': 'दृश्यता',
+                'metrics_header': 'Metrik Kabut Asep',
+                'metric_current_status': 'Status Saiki',
+                'metric_predicted_aqi': 'AQI Dipredhiksi',
+                'metric_wind_speed': 'Kacepetan Angin',
+                'metric_visibility': 'Jarak Pandang',
                 
-                'cv_header': 'क्लाउडविजन अंतर्दृष्टि',
-                'cv_explanation': 'यह देखने के लिए क्लाउडविजन का उपयोग करें कि क्या आप सुरक्षित वातावरण में हैं।',
-                'cv_browse_link': 'ब्राउज़ करने के लिए क्लिक करें',
-                'cv_drag_drop': 'या खींचें और छोड़ें',
-                'cv_file_type': 'पीएनजी, जेपीजी, या जेपीईजी (अधिकतम 5 एमबी प्रति फ़ाइल)',
-                'cv_button_analyze': 'क्लाउडविजन के साथ फोटो का विश्लेषण करें',
-                'cv_button_analyze_count': '{count} फोटो का विश्लेषण करें',
-                'api_title_analyzing': 'विश्लेषण हो रहा है...',
+                'cv_header': 'Wawasan CloudVision',
+                'cv_explanation': 'Gunakake CloudVision kanggo ndeleng menawi sampeyan ana ing lingkungan sing aman.',
+                'cv_browse_link': 'Klik kanggo ndeleng',
+                'cv_drag_drop': 'utawa seret lan culake',
+                'cv_file_type': 'PNG, JPG, utawa JPEG (Maksimal 5MB saben file)',
+                'cv_button_analyze': 'Analisis Foto karo CloudVision',
+                'cv_button_analyze_count': 'Analisis {count} Foto',
+                'api_title_analyzing': 'Nganalisis...',
                 
-                'footer_mission_header': 'हमारी टीम और मिशन',
-                'footer_mission_text': 'हेजराडार पर्यावरण प्रौद्योगिकी और डेटा विज्ञान पर केंद्रित एक समर्पित टीम द्वारा बनाया गया है। हम पूरे दक्षिण पूर्व एशिया में धुएं और धुंध की घटनाओं के लिए सटीक, पूर्वानुमानित मॉडलिंग प्रदान करने का प्रयास करते हैं। हमारा मंच सार्वजनिक स्वास्थ्य और सूचित निर्णय लेने को बढ़ावा देने के लिए महत्वपूर्ण वायु गुणवत्ता जानकारी के साथ स्थानीय समुदायों को सशक्त बनाने के लिए उन्नत उपग्रह डेटा और मशीन लर्निंग (क्लाउडविजन) का लाभ उठाता है।',
-                'footer_back_to_map': 'मानचित्र पर वापस',
-                'modal_close': 'बंद करें',
+                // NEW HAZE INSIGHT KEYS
+                'haze_insight_header': 'Wawasan Kabut Asep',
+                'haze_insight_text': 'Simulasèkake prédisi asep panjenengan dhéwé.',
+                'haze_insight_button': 'Miwiti Piranti Simulasi',
                 
-                'api_unhealthy_severe': 'AQI **अस्वस्थ** निर्धारित किया गया है। बाहरी गतिविधि से बचने की सलाह दी जाती है। जोखिम को कम करें और उच्च दक्षता वाले मास्क (N95 या उच्चतर) पहनने पर विचार करें।',
-                'api_unhealthy_sensitive': 'AQI **संवेदनशील समूहों के लिए अस्वस्थ** निर्धारित किया गया है। लंबे समय तक बाहरी परिश्रम को सीमित करें। श्वसन संबंधी समस्याओं वाले व्यक्तियों को घर के अंदर रहना चाहिए।',
-                'api_moderate': 'AQI **मध्यम** निर्धारित किया गया है। वायु गुणवत्ता स्वीकार्य है; हालांकि, असामान्य रूप से संवेदनशील लोगों को लंबे समय तक बाहरी परिश्रम को सीमित करने पर विचार करना चाहिए।',
-                'api_limit_reached': 'अधिकतम {count} फाइलें पूरी हो चुकी हैं। और नहीं जोड़ सकते।',
-                'api_file_type_error': 'फाइल {name} एक समर्थित छवि प्रकार (पीएनजी/जेपीजी/जेपीईजी) नहीं है।',
-                'api_file_size_limit': 'फाइल {name} {size}MB सीमा से अधिक है।',
-                'api_analysis_required': 'एआई विश्लेषण का प्रयास करने से पहले कृपया फाइलें चुनें।',
-                'api_title_complete': 'क्लाउडविजन विश्लेषण पूर्ण (AQI: {aqi})',
-                'api_title_message': 'संदेश',
+                'footer_mission_header': 'Tim lan Misi Kita',
+                'footer_mission_text': 'HazeRadar digawe dening tim khusus sing fokus ing teknologi lingkungan lan ilmu data. Kita ngupayakake nyedhiyakake modhèl prediksi sing akurat kanggo kedadeyan asep lan kabut ing saindhènging Asia Kidul-Wétan. Platform kita nggunakake data satelit majeng lan pambelajaran mesin (CloudVision) kanggo menehi informasi kualitas udara sing penting marang komunitas lokal, ningkatake kesehatan masyarakat lan njupuk keputusan sing informatif.',
+                'footer_back_to_map': 'Bali menyang Peta',
+                'modal_close': 'Tutup',
+                
+                'api_unhealthy_severe': 'AQI ditemtokake minangka **Ora Sehat**. Aktivitas njaba omah banget ora dianjurake. Kurangi paparan lan pertimbangake nganggo topeng efisiensi dhuwur (N95 utluwih dhuwur).',
+                'api_unhealthy_sensitive': 'AQI ditemtokake minangka **Ora Sehat kanggo Klompok Sensitif**. Watesi aktivitas fisik abot ing njaba omah. Individu kanthi kondisi ambegan kudu tetep ing njero omah.',
+                'api_moderate': 'AQI ditemtokake minangka **Sedheng**. Kualitas udara bisa ditampa; nanging, wong sing sensitif banget kudu nimbang matesi aktivitas fisik abot ing njaba omah.',
+                'api_limit_reached': 'Maksimal {count} file wis kecukupan. Ora bisa nambah maneh.',
+                'api_file_type_error': 'File {name} dudu jinis gambar sing didhukung (PNG/JPG/JPEG).',
+                'api_file_size_limit': 'File {name} ngluwihi wates {size}MB.',
+                'api_analysis_required': 'Mangga pilih file sadurunge nyoba analisis AI.',
+                'api_title_complete': 'Analisis CloudVision Rampung (AQI: {aqi})',
+                'api_title_message': 'Pesen',
             }
         };
         // --- END LANGUAGE TRANSLATION DATA ---
@@ -695,11 +755,13 @@
             
             // --- LANGUAGE LOGIC (NEW CORE IMPLEMENTATION) ---
             const LANGUAGE_STORAGE_KEY = 'userLanguage';
-            let currentLang = 'en';
+            // Set initial language to Javanese so the user sees the change immediately
+            let currentLang = 'jv'; 
 
             /** Looks up and returns the translated string for a given key. */
             function t(key, replacements = {}) {
-                let text = translations[currentLang][key] || translations.en[key] || `[${key}]`;
+                // Prioritize currentLang, fallback to en if currentLang or key is missing
+                let text = translations[currentLang]?.[key] || translations.en[key] || `[${key}]`;
                 
                 // Simple placeholder replacement (e.g., {count})
                 for (const [placeholder, value] of Object.entries(replacements)) {
@@ -746,15 +808,14 @@
                 renderFileList();
             }
 
-            /** Loads language preference from local storage or defaults to 'en'. */
+            /** Loads language preference from local storage or defaults to 'jv'. */
             function loadLanguage() {
                 const storedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+                // Set default to Javanese
                 if (storedLang && translations[storedLang]) {
                     currentLang = storedLang;
                 } else {
-                    // Fallback to 'en' or browser default if you prefer:
-                    // currentLang = (navigator.language || navigator.userLanguage).substring(0, 2);
-                    currentLang = 'en'; 
+                    currentLang = 'jv'; 
                 }
                 applyTranslations();
             }
@@ -826,6 +887,7 @@
             // Initialize theme on load
             loadTheme();
             themeToggle.addEventListener('click', toggleTheme);
+            
             // --- END THEME TOGGLE LOGIC ---
 
             // --- NAVIGATION LOGIC ---
@@ -940,7 +1002,7 @@
             
             // Define the dark and light tile layers
             const DARK_TILE_LAYER = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            const LIGHT_TILE_LAYER = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+            const LIGHT_TILE_LAYER = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{y}.png';
             const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
             /** Switches the map tile layer to match the current theme. */
@@ -1360,10 +1422,7 @@
                 handleFiles(files);
             }
             
-            // Click to browse handler
-            fileBrowseLink.addEventListener('click', function() {
-                fileElem.click();
-            });
+            // NOTE: Original click handler removed and integrated into the dropArea div's onclick attribute.
 
             // File Input Change Handler
             fileElem.addEventListener('change', function(e) {
