@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>HazeRadar — Local Wind-Driven Haze Simulation</title>
+
+<!-- Bootstrap + Leaflet (Used for basic UI and mapping) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+  /* Custom Dark Theme Styles */
+  :root { 
+    --bg:#0b1222; 
+    --card:#172033; 
+    --muted:#9fb2c8;
+    --primary-color: #06b6d4; /* cyan-500 */
+    --accent-color: #f97316; /* orange-600 */
+    --text-light: #e9f7ff; /* Pure white/light color for text */
+  }
+  html,body{
+    height:100%; 
+    margin:0; 
+    background:var(--bg); 
+    color:var(--text-light); /* Apply light text color globally */
+    font-family:Inter, Roboto, Arial;
+  }
+
+  .app{
+    display:flex; 
+    height:100vh;
+  }
+  
+  /* Sidebar Styling */
+  #sidebar{
+    width:350px; 
+    padding:18px; 
+    border-right:1px solid rgba(255,255,255,0.06); 
+    background:#111827;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    overflow-y: auto; /* Ensure inputs are visible */
+  }
+  #map{
+    flex:1;
+  }
+
+  h2{
+    font-size:1.5rem;
+    color: var(--primary-color);
+    font-weight: 700;
+  }
+  
+  /* Panel Card Styling */
+  .panel{
+    background:var(--card); 
+    padding:16px; 
+    border-radius:12px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  
+  /* Button Primary Overrides (for simulation) */
+  .btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    font-weight: 600;
+    transition: background-color 0.2s;
+    border-radius: 8px;
+  }
+  .btn-primary:hover {
+    background-color: #ea580c; /* darker orange */
+    border-color: #ea580c;
+  }
+  
+  /* Dropdown/Form Select Styling */
+  .form-select, .form-control {
+    background-color: #2c3e50;
+    color: var(--text-light);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+  }
+  .form-select:focus, .form-control:focus {
+    background-color: #2c3e50;
+    color: var(--text-light);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(6, 182, 212, 0.25);
+  }
+  
+  /* Slider Panel Styling */
+  #sliderPanel{
+    display:none;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  /* Slider Track/Thumb Overrides (Minimal styling for dark theme visibility) */
+  #hourSlider{
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    outline: none;
+  }
+  #hourSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: -4px;
+  }
+  #hourSlider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Status/Toast Box */
+  .toastBox{
+    font-size:1rem; 
+    margin-top:10px; 
+    color:var(--primary-color);
+    font-weight: 500;
+    min-height: 20px;
+  }
+
+  /* City Marker Styles */
+  .leaflet-interactive.city-marker {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  .leaflet-interactive.city-marker:hover {
+    transform: scale(1.3);
+  }
+
+  /* Fixed CSS for the descriptive text */
+  .sidebar-description {
+    color: var(--text-light) !important; /* Forces the text color to white/light */
+    font-size: 0.95rem;
+  }
+
+  /* Responsive considerations for smaller screens */
+  @media (max-width: 768px) {
+      .app {
+          flex-direction: column;
+      }
+      #sidebar {
+          width: 100%;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      }
+      #map {
+          height: 50vh; 
+      }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="sidebar">
+  <h2>Wind-Driven Haze Simulation</h2>
+  <div class="sidebar-description">A client-side model simulating 24 hours of haze spread (26 points/hour) driven by wind dynamics.</div>
+
+  <!-- Simulation Control Panel -->
+  <div class="panel">
+    <strong>1. Select Starting City</strong>
+    <select id="cityDropdown" class="form-select mt-2"></select>
+  </div>
+  
+  <!-- Wind Input Panel -->
+  <div class="panel">
+    <strong>2. Set Wind Conditions</strong>
+    <div class="row mt-2">
+      <div class="col">
+        <label class="form-label text-sm" for="windSpeed">Speed (km/h)</label>
+        <input type="number" id="windSpeed" class="form-control" value="15" min="0" max="100">
+      </div>
+      <div class="col">
+        <label class="form-label text-sm" for="windDirection">Direction (°)</label>
+        <input type="number" id="windDirection" class="form-control" value="270" min="0" max="360">
+      </div>
+    </div>
+    <div class="mt-2 text-xs text-center text-muted">0°=North, 90°=East, 180°=South, 270°=West</div>
+  </div>
+
+  <button id="simulateLocal" class="btn btn-primary btn-lg w-100">Run Local Wind Simulation</button>
+
+  <!-- Timeline Control Panel (Hidden until simulation starts) -->
+  <div id="sliderPanel" class="panel">
+    <strong>Timeline Control</strong>
+    <input id="hourSlider" type="range" min="1" max="24" value="1">
+    <div id="hourLabel" class="mt-2 text-center">Hour: 1</div>
+    <button id="replayBtn" class="btn btn-sm w-100 mt-2">Replay Animation</button>
+  </div>
+
+  <!-- Status Message Area -->
+  <div id="statusBox" class="toastBox">Ready.</div>
+</div>
+
+<div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // NOTE: API_ROOT is now only used for loading initial city list.
+  const API_ROOT = "https://haze-radargnnmodelstimulation-production.up.railway.app";
+  const map = L.map("map").setView([-1.5, 113], 5);
+
+  // Use a dark tile layer for better visualization contrast
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
+
+  let cityCoordinates = {};
+  let cityMarkers = [];
+  let hazeLayers = [];
+  let predictions = [];
+  let autoplayInterval = null;
+
+  // --- Haze Spread Constants ---
+  const INITIAL_PM25 = 150; // Starting PM2.5 for the source point
+  const DIFFUSION_RATE = 0.03; // Rate at which the cloud spreads outward (degrees/hour)
+  const HAZE_DECAY = 0.98; // PM2.5 retention rate per hour (98% remains)
+  
+  // --- Satellite Point Offsets (25 points for dense cluster) ---
+  const SATELLITE_OFFSETS = [];
+  const MAX_OFFSET_DEG = 0.06; // Maximum dispersion from center point (approx 6.6 km)
+  const GRID_SIZE = 5;
+
+  // Generate 25 points in a 5x5 grid pattern
+  for (let i = 0; i < GRID_SIZE; i++) {
+    for (let j = 0; j < GRID_SIZE; j++) {
+      // Calculate offset, centering around (0, 0)
+      const lat_offset = (i - (GRID_SIZE - 1) / 2) * (MAX_OFFSET_DEG / GRID_SIZE);
+      const lon_offset = (j - (GRID_SIZE - 1) / 2) * (MAX_OFFSET_DEG / GRID_SIZE);
+      
+      if (lat_offset !== 0 || lon_offset !== 0) { // Exclude exact center (handled separately)
+          SATELLITE_OFFSETS.push({ lat: lat_offset, lon: lon_offset });
+      }
+    }
+  }
+  // Now OFFSETS has 25 points.
+
+  // --- Utility Functions ---
+
+  function toast(msg){ document.getElementById("statusBox").innerText = msg; }
+
+  /**
+   * Defines the color based on PM2.5 (using common AQI standards).
+   */
+  function colorForAQI(pm25){
+    if(pm25<=12) return "#00e400";        // Good (Green)
+    if(pm25<=35) return "#ffff00";        // Moderate (Yellow)
+    if(pm25<=55) return "#ff7e00";        // Unhealthy SG (Orange)
+    if(pm25<=150) return "#ff0000";       // Unhealthy (Red)
+    if(pm25<=250) return "#99004c";       // Very unhealthy (Purple)
+    return "#7e0023";                    // Hazardous (Maroon)
+  }
+
+  /**
+   * Defines the radius in meters for the leaflet circle marker.
+   */
+  function radiusForPM(pm25){ 
+    // Max radius for visibility is around 3000m. Clamp minimum for visibility.
+    return Math.max(500, (pm25 / 150) * 3000); 
+  }
+
+  function clearHaze(){
+    hazeLayers.forEach(l => map.removeLayer(l));
+    hazeLayers = [];
+  }
+  
+  function clearMarkers() {
+    cityMarkers.forEach(l => map.removeLayer(l));
+    cityMarkers = [];
+  }
+  
+  // --- NEW CORE LOGIC: Local Wind-Driven Simulation ---
+
+  /**
+   * Simulates the movement and spread of a haze cloud over 24 hours.
+   * This logic replaces the API call.
+   */
+  function simulateLocalHazeSpread(centerLat, centerLon, windSpeed, windDirDeg) {
+      console.log(`Starting local simulation from Lat: ${centerLat}, Lon: ${centerLon}`);
+      console.log(`Wind: ${windSpeed} km/h @ ${windDirDeg}°`);
+      
+      const results = [];
+      const windDirRad = (windDirDeg + 180) % 360 * (Math.PI / 180); // Wind direction points TO, convert to where haze GOES
+      
+      let currentPM25 = INITIAL_PM25;
+      
+      // Conversion factor: 1 km/h is approx 0.000277 degrees latitude/longitude per hour at the equator
+      // We scale this down significantly for visual aesthetics at high zoom levels.
+      const DEGREE_PER_KMH = 0.00005; 
+
+      for (let h = 1; h <= 24; h++) {
+          // 1. Calculate Core Haze Properties for this hour
+          
+          // Total distance shifted by wind (proportional to wind speed and elapsed time)
+          const totalWindShift = windSpeed * h * DEGREE_PER_KMH;
+          
+          // Calculate the new central location of the haze plume
+          const shiftedLat = centerLat + totalWindShift * Math.sin(windDirRad);
+          const shiftedLon = centerLon + totalWindShift * Math.cos(windDirRad);
+          
+          // Update haze intensity (decay and slight randomness)
+          currentPM25 *= HAZE_DECAY;
+          let basePM25 = currentPM25 + (Math.random() - 0.5) * 5; // Add noise
+          if (basePM25 < 5) basePM25 = 5; // Clamp min PM2.5
+          
+          // 2. Add Core Point (The heaviest point of the plume)
+          results.push({
+              latitude: shiftedLat,
+              longitude: shiftedLon,
+              predicted_pm25: basePM25 * 1.05, // Core is slightly denser
+              forecast_hour: h
+          });
+
+          // 3. Add Satellite Points (The dispersed cluster)
+          SATELLITE_OFFSETS.forEach(offset => {
+              // The satellites spread further as time passes (diffusion)
+              const dispersionFactor = h * DIFFUSION_RATE;
+              
+              const satelliteLat = shiftedLat + offset.lat * dispersionFactor;
+              const satelliteLon = shiftedLon + offset.lon * dispersionFactor;
+              
+              // Satellites are slightly less intense and have greater random variation
+              const satellitePM25 = basePM25 * (0.8 + Math.random() * 0.2); 
+
+              results.push({
+                  latitude: satelliteLat,
+                  longitude: satelliteLon,
+                  predicted_pm25: satellitePM25,
+                  forecast_hour: h
+              });
+          });
+      }
+      
+      console.log(`Local simulation generated ${results.length} predictions.`);
+      return results;
+  }
+  
+  // --- Original Core Logic (Modified) ---
+
+  /**
+   * Loads cities from the API, populates the dropdown, and draws the initial city dots.
+   */
+  async function loadCities() {
+    try {
+      // NOTE: We still use the API to get the list of known cities
+      const r = await fetch(API_ROOT + "/api/cities");
+      
+      if (!r.ok) {
+         toast(`Error loading cities: Status ${r.status}`);
+         throw new Error(`HTTP error! status: ${r.status}`);
+      }
+      
+      const d = await r.json();
+
+      const dropdown = document.getElementById("cityDropdown");
+      dropdown.innerHTML = "";
+      
+      if (!d.cities || d.cities.length === 0) {
+        toast("Error: Could not load cities from API.");
+        return;
+      }
+
+      clearMarkers(); 
+      clearHaze(); 
+
+      d.cities.forEach(c => {
+        cityCoordinates[c.city] = c;
+        
+        // Populate Dropdown
+        const opt = document.createElement("option");
+        opt.value = c.city;
+        opt.innerText = c.city;
+        dropdown.appendChild(opt);
+
+        // Draw City Dot Marker
+        const marker = L.circleMarker([c.latitude, c.longitude], {
+          radius:8, 
+          color:"#06b6d4", 
+          fillColor:"#22d3ee",
+          fillOpacity:0.8,
+          weight:1,
+          className: 'city-marker'
+        }).addTo(map);
+
+        marker.bindPopup(`<b>${c.city}</b><br>Initial Haze Source Point.`);
+        cityMarkers.push(marker);
+      });
+      
+      toast(`Cities loaded. Ready to run local wind simulation for ${1 + SATELLITE_OFFSETS.length} points.`);
+      
+    } catch (error) {
+      console.error("Error loading cities:", error);
+      toast(`Error loading cities. Please check the network connection. (${error.message})`);
+    }
+  }
+
+  /**
+   * Runs the local simulation and initiates the animation.
+   */
+  function runSimulation(){
+    const selectedCity = document.getElementById("cityDropdown").value;
+    const c = cityCoordinates[selectedCity];
+    const windSpeed = parseFloat(document.getElementById("windSpeed").value);
+    const windDirection = parseFloat(document.getElementById("windDirection").value);
+
+    if (!c || isNaN(windSpeed) || isNaN(windDirection)) {
+        toast("Please select a city and enter valid wind conditions.");
+        return;
+    }
+
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+    }
+
+    clearHaze();
+    toast(`Running local wind simulation from ${selectedCity}... 💨`);
+
+    // --- EXECUTE LOCAL MODEL ---
+    predictions = simulateLocalHazeSpread(c.latitude, c.longitude, windSpeed, windDirection);
+    // ---------------------------
+
+    map.flyTo([c.latitude, c.longitude], 10, {animate:true, duration:1.5}); // Zoom out slightly for plume visibility
+    
+    if (predictions.length > 0) {
+        toast("Simulation complete. Playing haze spread... 🌬️");
+        playAnimation();
+    } else {
+        toast("Local simulation failed to generate data.");
+    }
+  }
+
+  /**
+   * Starts the 24-hour animation loop (like a video player).
+   */
+  function playAnimation(){
+    clearHaze();
+    let hour=1;
+    document.getElementById("sliderPanel").style.display = "flex"; // Show controls
+
+    // Clear any existing interval before starting a new one
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+    }
+    
+    showHour(hour); // Show hour 1 immediately
+    hour++;
+
+    autoplayInterval = setInterval(()=>{
+      showHour(hour);
+      hour++;
+      if(hour>24){
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+        toast("Playback finished. Use slider to inspect manually.");
+      }
+    }, 800); // 800ms per hour step
+  }
+
+  /**
+   * Draws the prediction data for a specific hour on the map.
+   */
+  function showHour(h){
+    clearHaze();
+    document.getElementById("hourSlider").value = h;
+    document.getElementById("hourLabel").innerText = "Hour: "+h;
+
+    const hourData = predictions.filter(p => p.forecast_hour === h);
+
+    hourData.forEach(p => {
+      const pm25 = p.predicted_pm25; 
+      const col = colorForAQI(pm25);
+      const r = radiusForPM(pm25);
+
+      // Draw a circle for each predicted point
+      const ring = L.circle([p.latitude, p.longitude],{
+        radius:r,
+        color:col,
+        fillColor:col,
+        fillOpacity:0.5, 
+        weight:0 
+      }).addTo(map);
+
+      // Add popup with details for inspection
+      ring.bindPopup(`
+          <b>Hour ${h} Prediction</b><br>
+          PM2.5: ${pm25.toFixed(2)} µg/m³
+      `);
+
+      hazeLayers.push(ring);
+    });
+  }
+
+  // --- Event Handlers ---
+
+  document.getElementById("simulateLocal").onclick = runSimulation;
+
+  document.getElementById("cityDropdown").addEventListener("change", e => {
+    const selectedCity = e.target.value;
+    const c = cityCoordinates[selectedCity];
+    if (c) {
+        map.flyTo([c.latitude, c.longitude], 12, { duration: 1.0 });
+    }
+    clearHaze();
+    toast("City selected. Press 'Run Local Wind Simulation' to begin.");
+  });
+
+
+  // Handle slider interaction (stops autoplay)
+  document.getElementById("hourSlider").addEventListener("input", e=>{
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+        toast("Autoplay paused. Inspecting manually.");
+    }
+    showHour(parseInt(e.target.value));
+  });
+
+  // Replay button handler
+  document.getElementById("replayBtn").onclick = ()=>{
+    if (predictions.length > 0) {
+        playAnimation();
+        toast("Replaying simulation... 💨");
+    } else {
+        toast("Please run a simulation first.");
+    }
+  };
+
+  // --- Initialization ---
+  loadCities();
+</script>
+</body>
+</html>
