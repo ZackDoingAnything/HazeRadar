@@ -5,100 +5,108 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>HazeRadar — Local Wind-Driven Haze Simulation</title>
 
-<!-- Bootstrap + Leaflet (Used for basic UI and mapping) -->
+<!-- Supabase JS Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Bootstrap CSS for styling and layout -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Leaflet CSS for the map -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-  /* Custom Dark Theme Styles */
-  :root { 
+/* Custom Dark Theme Styles using Inter font */
+:root { 
     --bg:#0b1222; 
     --card:#172033; 
     --muted:#9fb2c8;
     --primary-color: #06b6d4; /* cyan-500 */
     --accent-color: #f97316; /* orange-600 */
     --text-light: #e9f7ff; /* Pure white/light color for text */
-  }
-  html,body{
-    height:100%; 
-    margin:0; 
-    background:var(--bg); 
-    color:var(--text-light); /* Apply light text color globally */
-    font-family:Inter, Roboto, Arial;
-  }
+}
 
-  .app{
-    display:flex; 
-    height:100vh;
-  }
-  
-  /* Sidebar Styling */
-  #sidebar{
-    width:350px; 
-    padding:18px; 
-    border-right:1px solid rgba(255,255,255,0.06); 
-    background:#111827;
+html, body {
+    height: 100%; 
+    margin: 0; 
+    background: var(--bg); 
+    color: var(--text-light); /* Apply light text color globally */
+    font-family: Inter, Roboto, Arial, sans-serif;
+}
+
+.app {
+    display: flex; 
+    height: 100vh;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    width: 350px; 
+    padding: 18px; 
+    border-right: 1px solid rgba(255,255,255,0.06); 
+    background: #111827;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     box-shadow: 2px 0 10px rgba(0,0,0,0.5);
     overflow-y: auto; /* Ensure inputs are visible */
-  }
-  #map{
-    flex:1;
-  }
+}
 
-  h2{
-    font-size:1.5rem;
+#map {
+    flex: 1;
+}
+
+h2 {
+    font-size: 1.5rem;
     color: var(--primary-color);
     font-weight: 700;
-  }
-  
-  /* Panel Card Styling */
-  .panel{
-    background:var(--card); 
-    padding:16px; 
-    border-radius:12px; 
+}
+
+/* Panel Card Styling */
+.panel {
+    background: var(--card); 
+    padding: 16px; 
+    border-radius: 12px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     border: 1px solid rgba(255,255,255,0.08);
-  }
-  
-  /* Button Primary Overrides (for simulation) */
-  .btn-primary {
+}
+
+/* Button Primary Overrides (for simulation) */
+.btn-primary {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
     font-weight: 600;
     transition: background-color 0.2s;
     border-radius: 8px;
-  }
-  .btn-primary:hover {
+}
+
+.btn-primary:hover {
     background-color: #ea580c; /* darker orange */
     border-color: #ea580c;
-  }
-  
-  /* Dropdown/Form Select Styling */
-  .form-select, .form-control {
+}
+
+/* Dropdown/Form Select Styling */
+.form-select, .form-control {
     background-color: #2c3e50;
     color: var(--text-light);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
-  }
-  .form-select:focus, .form-control:focus {
+}
+
+.form-select:focus, .form-control:focus {
     background-color: #2c3e50;
     color: var(--text-light);
     border-color: var(--primary-color);
     box-shadow: 0 0 0 0.25rem rgba(6, 182, 212, 0.25);
-  }
-  
-  /* Slider Panel Styling */
-  #sliderPanel{
-    display:none;
+}
+
+/* Slider Panel Styling */
+#sliderPanel {
+    display: none;
     flex-direction: column;
     gap: 0.75rem;
-  }
-  
-  /* Slider Track/Thumb Overrides (Minimal styling for dark theme visibility) */
-  #hourSlider{
+}
+
+/* Slider Track/Thumb Overrides (Minimal styling for dark theme visibility) */
+#hourSlider {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
@@ -106,8 +114,9 @@
     background: rgba(255,255,255,0.1);
     border-radius: 4px;
     outline: none;
-  }
-  #hourSlider::-webkit-slider-thumb {
+}
+
+#hourSlider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 16px;
@@ -116,615 +125,653 @@
     border-radius: 50%;
     cursor: pointer;
     margin-top: -4px;
-  }
-  #hourSlider::-moz-range-thumb {
+}
+
+#hourSlider::-moz-range-thumb {
     width: 16px;
     height: 16px;
     background: var(--primary-color);
     border-radius: 50%;
     cursor: pointer;
     border: none;
-  }
+}
 
-  /* Status/Toast Box */
-  .toastBox{
-    font-size:1rem; 
-    margin-top:10px; 
-    color:var(--primary-color);
+/* Status/Toast Box */
+.toastBox {
+    font-size: 1rem; 
+    margin-top: 10px; 
+    color: var(--primary-color);
     font-weight: 500;
     min-height: 20px;
-  }
+}
 
-  /* City Marker Styles */
-  .leaflet-interactive.city-marker {
+/* City Marker Styles */
+.leaflet-interactive.city-marker {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-  }
-  .leaflet-interactive.city-marker:hover {
-    transform: scale(1.3);
-  }
+}
 
-  /* Fixed CSS for the descriptive text */
-  .sidebar-description {
+.leaflet-interactive.city-marker:hover {
+    transform: scale(1.3);
+}
+
+/* Fixed CSS for the descriptive text */
+.sidebar-description {
     color: var(--text-light) !important; /* Forces the text color to white/light */
     font-size: 0.95rem;
-  }
-  
-  /* === NEW STYLES FOR SCROLLABLE WIND DATA === */
-  #windForecastDisplay {
+}
+
+/* === NEW STYLES FOR SCROLLABLE WIND DATA === */
+#windForecastDisplay {
     max-height: 150px; /* Reduced fixed height */
     overflow-y: auto; /* Enable vertical scrolling */
     padding: 5px; 
     border: 1px solid #374151; 
     border-radius: 4px; 
-  }
-  /* =========================================== */
+}
+/* =========================================== */
 
-  /* Responsive considerations for smaller screens */
-  @media (max-width: 768px) {
-      .app {
-          flex-direction: column;
-      }
-      #sidebar {
-          width: 100%;
-          height: auto;
-          border-right: none;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-          box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      }
-      #map {
-          height: 50vh; 
-      }
-  }
+/* Responsive considerations for smaller screens */
+@media (max-width: 768px) {
+    .app {
+        flex-direction: column;
+    }
+    #sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    #map {
+        height: 50vh; 
+    }
+}
 </style>
 </head>
 <body>
 <div class="app">
 
 <div id="sidebar">
-  <h2>Wind-Driven Haze Simulation</h2>
-  <div class="sidebar-description">A client-side model simulating 24 hours of haze spread (9 points/hour) driven by a **simulated dynamic wind forecast**.</div>
+  <h2>Wind-Driven Haze Simulation</h2>
+  <div class="sidebar-description">A client-side model simulating 24 hours of haze spread (9 points/hour) driven by a **simulated dynamic wind forecast**, seeded by real-time data from Supabase.</div>
 
-  <!-- Simulation Control Panel -->
-  <div class="panel">
-    <strong>1. Select Starting City</strong>
-    <select id="cityDropdown" class="form-select mt-2"></select>
-  </div>
-  
-  <!-- Wind Forecast Display Panel (Now displays fetched base wind) -->
-  <div class="panel">
-    <strong>2. Initial Wind Conditions (Simulated Fetch)</strong>
-    <div id="windForecastDisplay" class="mt-2 text-sm text-light">
-      <!-- Base wind data will be loaded here -->
-      <p class="text-center text-muted mt-2">Select a city to retrieve its initial wind data.</p>
-    </div>
-  </div>
+    <div class="panel">
+    <strong>1. Select Starting City</strong>
+    <select id="cityDropdown" class="form-select mt-2"></select>
+  </div>
+  
+    <div class="panel">
+    <strong>2. Initial Wind Conditions (Supabase Fetch)</strong>
+    <div id="windForecastDisplay" class="mt-2 text-sm text-light">
+            <p class="text-center text-muted mt-2">Select a city to retrieve its initial wind data.</p>
+    </div>
+  </div>
 
-  <button id="simulateLocal" class="btn btn-primary btn-lg w-100">Run Local Wind Simulation</button>
+  <button id="simulateLocal" class="btn btn-primary btn-lg w-100">Run Local Wind Simulation</button>
 
-  <!-- Timeline Control Panel (Hidden until simulation starts) -->
-  <div id="sliderPanel" class="panel">
-    <strong>Timeline Control</strong>
-    <input id="hourSlider" type="range" min="1" max="24" value="1">
-    <div id="hourLabel" class="mt-2 text-center">Hour: 1</div>
-    
-    <!-- NEW TOGGLE SWITCH for view mode -->
-    <div class="form-check form-switch mt-3 d-flex justify-content-center">
-        <input class="form-check-input" type="checkbox" id="viewModeToggle" checked>
-        <label class="form-check-label ms-2" for="viewModeToggle" id="toggleLabel">Cumulative View</label>
-    </div>
-    <!-- END NEW TOGGLE SWITCH -->
-    
-    <button id="replayBtn" class="btn btn-sm w-100 mt-2">Replay Animation</button>
-  </div>
+    <div id="sliderPanel" class="panel">
+    <strong>Timeline Control</strong>
+    <input id="hourSlider" type="range" min="1" max="24" value="1">
+    <div id="hourLabel" class="mt-2 text-center">Hour: 1</div>
+    
+        <div class="form-check form-switch mt-3 d-flex justify-content-center">
+        <input class="form-check-input" type="checkbox" id="viewModeToggle" checked>
+        <label class="form-check-label ms-2" for="viewModeToggle" id="toggleLabel">Cumulative View</label>
+    </div>
+        
+    <button id="replayBtn" class="btn btn-sm w-100 mt-2">Replay Animation</button>
+  </div>
 
-  <!-- Status Message Area -->
-  <div id="statusBox" class="toastBox">Ready.</div>
+    <div id="statusBox" class="toastBox">Ready.</div>
 </div>
 
 <div id="map"></div>
 </div>
 
+<!-- Leaflet JS Library -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // NOTE: API_ROOT is now only used for loading initial city list.
-  const API_ROOT = "https://haze-radargnnmodelstimulation-production.up.railway.app";
-  const map = L.map("map").setView([-1.5, 113], 5);
+  // ------------------------------------------
+  // --- SUPABASE INITIALIZATION ---
+  // ------------------------------------------
+  
+  // Your Supabase Project URL and Public API Key
+  const SUPABASE_URL = 'https://daxrnmvkpikjvvzgrhko.supabase.co';
+  // NOTE: The provided key is used here.
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRheHJubXZrcGlranZ2emdyaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTkyNjEsImV4cCI6MjA3NjI3NTI2MX0.XWJ_aWUh5Eci5tQSRAATqDXmQ5nh2eHQGzYu6qMcsvQ';
+  
+  // Initialize Supabase Client
+  const { createClient } = supabase;
+  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // ------------------------------------------
+  // --- MAP AND CONSTANTS ---
+  // ------------------------------------------
+  
+  // Endpoint to fetch the list of city coordinates
+  const API_ROOT = "https://haze-radargnnmodelstimulation-production.up.railway.app";
+  const map = L.map("map").setView([-1.5, 113], 5);
 
-  // Use a dark tile layer for better visualization contrast
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-  }).addTo(map);
+  // Use a dark tile layer for better visualization contrast
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
 
-  let cityCoordinates = {};
-  let cityMarkers = [];
-  let hazeLayers = [];
-  let predictions = [];
-  let autoplayInterval = null;
-  // Store 24 hours of dynamically generated wind data
-  let hourlyWindForecast = []; 
-  // Store the fetched base wind data for the selected city
-  let baseWindData = null;
-  // Removed: let MAX_HAZE_RADIUS = 0; 
+  let cityCoordinates = {};
+  let cityMarkers = [];
+  let hazeLayers = [];
+  let predictions = [];
+  let autoplayInterval = null;
+  // Store 24 hours of dynamically generated wind data
+  let hourlyWindForecast = []; 
+  // Store the fetched base wind data for the selected city
+  let baseWindData = null;
 
-  // --- Haze Spread Constants ---
-  const INITIAL_PM25 = 150; // Starting PM2.5 for the source point
-  const DIFFUSION_RATE = 0.03; // Rate at which the cloud spreads outward (degrees/hour)
-  const HAZE_DECAY = 0.98; // PM2.5 retention rate per hour (98% remains)
-  
-  // --- Radius Constants ---
-  const MIN_RADIUS_M = 200; // Minimum radius in meters (reduced from 200)
-  const MAX_RADIUS_M = 1000; // Maximum radius in meters (reduced from 1500)
-  
-  // --- Satellite Point Offsets (Constants for randomization) ---
-  const NUM_SATELLITES = 8; // Total satellite points per hour
-  const MAX_OFFSET_DEG = 0.04; // Maximum static dispersion radius for the cluster (0.04 degrees)
-  
-  // --- Wind Simulation Constants ---
-  const SPEED_VARIANCE = 5; // Max random change in speed
-  const DIRECTION_VARIANCE = 20; // Max random change in direction
+  // --- Haze Spread Constants ---
+  const INITIAL_PM25 = 150; 
+  const DIFFUSION_RATE = 0.03; 
+  const HAZE_DECAY = 0.98; 
+  
+  // --- Radius Constants ---
+  const MIN_RADIUS_M = 200; 
+  const MAX_RADIUS_M = 1000; 
+  
+  // --- Satellite Point Offsets (Constants for randomization) ---
+  const NUM_SATELLITES = 8; 
+  const MAX_OFFSET_DEG = 0.04; 
+  
+  // --- Wind Simulation Constants (For dynamic forecast generation) ---
+  const SPEED_VARIANCE = 5; 
+  const DIRECTION_VARIANCE = 20; 
+  
+  
+  // --- Utility Functions ---
 
-  // --- Simulated Database Lookup Table (City used as key) ---
-  // This simulates the database query for the 'first instance' of wind data.
-  const CITY_WIND_DEFAULTS = {
-      "Pekanbaru": { speed: 12, direction: 160 }, // Moderate, NNW
-      "Jambi": { speed: 8, direction: 120 },      // Light, NW
-      "Palembang": { speed: 18, direction: 200 },  // Strong, NNE
-      "Palangkaraya": { speed: 15, direction: 270 }, // Moderate, West
-      "Sampit": { speed: 10, direction: 290 },     // Light, WNW
-      "Pangkalan Bun": { speed: 14, direction: 240 },// Moderate, SW
-      "Banjarmasin": { speed: 20, direction: 90 }  // Strong, East
-  };
+  function toast(msg){ document.getElementById("statusBox").innerText = msg; }
 
+  // Helper function for color interpolation (RGB)
+  function interpolateColor(color1, color2, factor) {
+      function hexToRgb(hex) {
+          const bigint = parseInt(hex.slice(1), 16);
+          return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+      }
+      function rgbToHex(r, g, b) {
+          return '#' + [r, g, b].map(x => {
+              const hex = Math.round(x).toString(16);
+              return hex.length === 1 ? '0' + hex : hex;
+          }).join('');
+      }
 
-  // --- Utility Functions ---
+      const rgb1 = hexToRgb(color1);
+      const rgb2 = hexToRgb(color2);
 
-  function toast(msg){ document.getElementById("statusBox").innerText = msg; }
+      const r = rgb1[0] + (rgb2[0] - rgb1[0]) * factor;
+      const g = rgb1[1] + (rgb2[1] - rgb1[1]) * factor;
+      const b = rgb1[2] + (rgb2[2] - rgb1[2]) * factor;
+      
+      return rgbToHex(r, g, b);
+  }
 
-  // Helper function for color interpolation (RGB)
-  function interpolateColor(color1, color2, factor) {
-      // Assuming color inputs are hex strings like '#RRGGBB'
-      function hexToRgb(hex) {
-          const bigint = parseInt(hex.slice(1), 16);
-          return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
-      }
-      function rgbToHex(r, g, b) {
-          return '#' + [r, g, b].map(x => {
-              const hex = Math.round(x).toString(16);
-              return hex.length === 1 ? '0' + hex : hex;
-          }).join('');
-      }
+  // Define color stops: Red (1) -> Orange (8) -> Yellow (16) -> Grey (24)
+  const COLOR_STOPS = {
+      1: "#FF0000", // Red (Fresh Haze)
+      8: "#FF8C00", // Dark Orange
+      16: "#FFFF00", // Yellow
+      24: "#808080" // Grey (Old/Muted Haze)
+  };
 
-      const rgb1 = hexToRgb(color1);
-      const rgb2 = hexToRgb(color2);
+  /**
+   * Defines the color based on the forecast hour (1-24), using a gradient from Red to Grey.
+   */
+  function colorForHazePoint(h) {
+      if (h <= 8) {
+          // Red to Orange (Factor ranges from 0 to 1)
+          const factor = (h - 1) / 7; 
+          return interpolateColor(COLOR_STOPS[1], COLOR_STOPS[8], factor);
+      } else if (h <= 16) {
+          // Orange to Yellow (Factor ranges from 0 to 1)
+          const factor = (h - 8) / 8;
+          return interpolateColor(COLOR_STOPS[8], COLOR_STOPS[16], factor);
+      } else {
+          // Yellow to Grey (Factor ranges from 0 to 1)
+          const factor = (h - 16) / 8;
+          return interpolateColor(COLOR_STOPS[16], COLOR_STOPS[24], factor);
+      }
+  }
 
-      const r = rgb1[0] + (rgb2[0] - rgb1[0]) * factor;
-      const g = rgb1[1] + (rgb2[1] - rgb1[1]) * factor;
-      const b = rgb1[2] + (rgb2[2] - rgb1[2]) * factor;
-      
-      return rgbToHex(r, g, b);
-  }
+  /**
+   * Defines the radius in meters for the leaflet circle marker based on PM2.5 level.
+   */
+  function radiusForPM(pm25){ 
+    return Math.max(MIN_RADIUS_M, (pm25 / INITIAL_PM25) * MAX_RADIUS_M); 
+  }
 
-  // Define color stops: Red (1) -> Orange (8) -> Yellow (16) -> Grey (24)
-  const COLOR_STOPS = {
-      1: "#FF0000", // Red (Fresh Haze)
-      8: "#FF8C00", // Dark Orange
-      16: "#FFFF00", // Yellow
-      24: "#808080" // Grey (Old/Muted Haze)
-  };
+  function clearHaze(){
+    hazeLayers.forEach(l => map.removeLayer(l));
+    hazeLayers = [];
+  }
+  
+  function clearMarkers() {
+    cityMarkers.forEach(l => map.removeLayer(l));
+    cityMarkers = [];
+  }
+  
+  // ----------------------------------------------------
+  // --- Supabase Fetch for Initial Wind (Hour 1) ---
+  // ----------------------------------------------------
+  
+  /**
+   * Fetches the latest wind speed and direction for the selected city from Supabase.
+   */
+  async function fetchInitialWindData(cityName) {
+      toast(`Fetching initial wind data for ${cityName} from Supabase...`);
+      baseWindData = null; // Clear previous data
 
-  /**
-   * Defines the color based on the forecast hour (1-24), using a gradient from Red to Grey.
-   */
-  function colorForHazePoint(h) {
-      if (h <= 8) {
-          // Red to Orange (Factor ranges from 0 to 1)
-          const factor = (h - 1) / 7; 
-          return interpolateColor(COLOR_STOPS[1], COLOR_STOPS[8], factor);
-      } else if (h <= 16) {
-          // Orange to Yellow (Factor ranges from 0 to 1)
-          const factor = (h - 8) / 8;
-          return interpolateColor(COLOR_STOPS[8], COLOR_STOPS[16], factor);
-      } else {
-          // Yellow to Grey (Factor ranges from 0 to 1)
-          const factor = (h - 16) / 8;
-          return interpolateColor(COLOR_STOPS[16], COLOR_STOPS[24], factor);
-      }
-  }
+      // Supabase query to get the latest wind data for the selected city
+      const { data, error } = await supabaseClient
+        .from('gnn_training_data') // Your specified table name
+        .select('wind_speed, wind_direction, timestamp') 
+        .eq('city', cityName)
+        .order('timestamp', { ascending: false }) 
+        .limit(1)
 
-  /**
-   * Defines the radius in meters for the leaflet circle marker.
-   */
-  function radiusForPM(pm25){ 
-    // Uses the new constants for reduced fixed size
-    return Math.max(MIN_RADIUS_M, (pm25 / INITIAL_PM25) * MAX_RADIUS_M); 
-  }
+      if (error) {
+          console.error("Supabase Error:", error);
+          document.getElementById("windForecastDisplay").innerHTML = `
+             <p class="text-danger text-center mt-2">Error: Could not fetch wind data from Supabase. Check console.</p>
+          `;
+          toast(`Supabase Error: ${error.message}`);
+          return false;
+      }
 
-  function clearHaze(){
-    hazeLayers.forEach(l => map.removeLayer(l));
-    hazeLayers = [];
-  }
-  
-  function clearMarkers() {
-    cityMarkers.forEach(l => map.removeLayer(l));
-    cityMarkers = [];
-  }
-  
-  // --- NEW: Simulated API Call for Initial Wind Data ---
-  
-  /**
-   * Simulates fetching the initial wind speed and direction for the selected city
-   * from the database (using the city name as a key).
-   */
-  async function fetchInitialWindData(cityName) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (data && data.length > 0) {
+          const wind = data[0];
+          baseWindData = { 
+            speed: wind.wind_speed, 
+            direction: wind.wind_direction 
+          };
+          
+          document.getElementById("windForecastDisplay").innerHTML = `
+              <p class="mb-0 mt-1">
+                <span class="font-weight-bold">Speed:</span> ${baseWindData.speed} km/h (Hour 1, Fetched)
+              </p>
+              <p class="mb-0">
+                <span class="font-weight-bold">Direction:</span> ${baseWindData.direction}° (Hour 1, Fetched)
+              </p>
+              <p class="text-muted text-xs mt-1 mb-0">Run simulation to generate Hour 2-24 forecast.</p>
+          `;
+          toast(`Wind data loaded for ${cityName}.`);
+          return true;
+      } else {
+          document.getElementById("windForecastDisplay").innerHTML = `
+             <p class="text-warning text-center mt-2">No latest wind data found for ${cityName} in gnn_training_data.</p>
+          `;
+          toast(`No wind data found for ${cityName}.`);
+          return false;
+      }
+  }
 
-      const windData = CITY_WIND_DEFAULTS[cityName];
-      
-      if (windData) {
-          baseWindData = windData;
-          // Updated display to show initial data only (for the scrollable box)
-          document.getElementById("windForecastDisplay").innerHTML = `
-              <p class="mb-0 mt-1">
-                <span class="font-weight-bold">Speed:</span> ${windData.speed} km/h (Base)
-              </p>
-              <p class="mb-0">
-                <span class="font-weight-bold">Direction:</span> ${windData.direction}° (Base)
-              </p>
-              <p class="text-muted text-xs mt-1 mb-0">Forecast will drift from these initial values. Run simulation to see 24H forecast list.</p>
-          `;
-          return true;
-      } else {
-          baseWindData = null;
-          document.getElementById("windForecastDisplay").innerHTML = `
-             <p class="text-warning text-center mt-2">Error: No initial wind data found for this city.</p>
-          `;
-          return false;
-      }
-  }
+  // ----------------------------------------------------
+  // --- Dynamic Wind Forecast Generator (Hours 2-24) ---
+  // ----------------------------------------------------
 
-  // --- Dynamic Wind Forecast Generator ---
+  /**
+   * Generates a 24-hour wind forecast with hourly variations, seeded by the base data.
+   */
+  function generateDynamicWindForecastFromBase() {
+      hourlyWindForecast = [];
+      
+      // Hour 1: Use the fetched base data directly
+      hourlyWindForecast.push({
+          hour: 1,
+          speed: parseFloat(baseWindData.speed),
+          direction: parseFloat(baseWindData.direction)
+      });
 
-  /**
-   * Generates a 24-hour wind forecast with hourly variations, seeded by the base data.
-   */
-  function generateDynamicWindForecastFromBase() {
-      hourlyWindForecast = [];
-      let currentSpeed = baseWindData.speed;
-      let currentDirection = baseWindData.direction;
+      let currentSpeed = baseWindData.speed;
+      let currentDirection = baseWindData.direction;
 
-      for (let h = 1; h <= 24; h++) {
-          // Randomly adjust speed
-          const speedChange = (Math.random() - 0.5) * 2 * SPEED_VARIANCE; // +/- variance
-          currentSpeed = Math.max(5, currentSpeed + speedChange); // Keep min speed 5 km/h
+      // Hours 2 through 24: Generate dynamically
+      for (let h = 2; h <= 24; h++) {
+          // Randomly adjust speed
+          const speedChange = (Math.random() - 0.5) * 2 * SPEED_VARIANCE; // +/- variance
+          currentSpeed = Math.max(5, currentSpeed + speedChange); // Keep min speed 5 km/h
 
-          // Randomly adjust direction (wrap around 0-360)
-          const directionChange = (Math.random() - 0.5) * 2 * DIRECTION_VARIANCE; // +/- variance
-          currentDirection = (currentDirection + directionChange) % 360;
-          if (currentDirection < 0) currentDirection += 360;
-          
-          const windData = {
-              hour: h,
-              speed: parseFloat(currentSpeed.toFixed(1)),
-              direction: Math.floor(currentDirection)
-          };
-          
-          hourlyWindForecast.push(windData);
-      }
-      
-      // Update the display to show the full dynamic forecast in the scrollable box
-      let html = '<strong>Generated Hourly Wind Data:</strong><ul class="list-unstyled text-xs p-1 m-0">';
-      hourlyWindForecast.forEach(w => {
-          html += `<li class="d-flex justify-content-between"><span>Hour ${w.hour.toString().padStart(2, '0')}:</span> <span>${w.speed} km/h @ ${w.direction}°</span></li>`;
-      });
-      html += '</ul>';
-      document.getElementById("windForecastDisplay").innerHTML = html;
-  }
+          // Randomly adjust direction (wrap around 0-360)
+          const directionChange = (Math.random() - 0.5) * 2 * DIRECTION_VARIANCE; // +/- variance
+          currentDirection = (currentDirection + directionChange) % 360;
+          if (currentDirection < 0) currentDirection += 360;
+          
+          const windData = {
+              hour: h,
+              speed: parseFloat(currentSpeed.toFixed(1)),
+              direction: Math.floor(currentDirection)
+          };
+          
+          hourlyWindForecast.push(windData);
+      }
+      
+      // Update the display to show the full dynamic forecast in the scrollable box
+      let html = '<strong>Generated Hourly Wind Data:</strong><ul class="list-unstyled text-xs p-1 m-0">';
+      hourlyWindForecast.forEach(w => {
+          // Highlight Hour 1 (fetched data)
+          const isFetched = w.hour === 1 ? ' font-weight-bold text-success' : '';
+          html += `<li class="d-flex justify-content-between${isFetched}"><span>Hour ${w.hour.toString().padStart(2, '0')}:</span> <span>${w.speed} km/h @ ${w.direction}°</span></li>`;
+      });
+      html += '</ul>';
+      document.getElementById("windForecastDisplay").innerHTML = html;
+  }
 
-  // --- CORE LOGIC: Local Wind-Driven Simulation (Updated) ---
+  // --- CORE LOGIC: Local Wind-Driven Simulation ---
 
-  /**
-   * Simulates the movement and spread of a haze cloud over 24 hours.
-   */
-  function simulateLocalHazeSpread(centerLat, centerLon) {
-      console.log(`Starting local simulation from Lat: ${centerLat}, Lon: ${centerLon}`);
-      
-      const results = [];
-      const DEGREE_PER_KMH = 0.00005; 
-      
-      // Initial plume center is the initial fire coordinate (hour 0).
-      let currentPlumeCenterLat = centerLat;
-      let currentPlumeCenterLon = centerLon;
-      let currentPM25 = INITIAL_PM25;
+  /**
+   * Simulates the movement and spread of a haze cloud over 24 hours.
+   */
+  function simulateLocalHazeSpread(centerLat, centerLon) {
+      console.log(`Starting local simulation from Lat: ${centerLat}, Lon: ${centerLon}`);
+      
+      const results = [];
+      const DEGREE_PER_KMH = 0.00005; // Conversion factor for movement
+      
+      // Initial plume center is the initial fire coordinate (hour 0).
+      let currentPlumeCenterLat = centerLat;
+      let currentPlumeCenterLon = centerLon;
+      let currentPM25 = INITIAL_PM25;
 
-      for (let h = 1; h <= 24; h++) {
-          const wind = hourlyWindForecast[h - 1]; // Get wind data for the current hour
-          const windSpeed = wind.speed;
-          const windDirDeg = wind.direction;
-          const windRad = windDirDeg * (Math.PI / 180);
-          
-          // 1. Calculate new plume center location for THIS hour
-          const hourlyWindShift = windSpeed * DEGREE_PER_KMH;
-          
-          // Calculate the new central location of the haze plume
-          const nextPlumeCenterLat = currentPlumeCenterLat + hourlyWindShift * Math.cos(windRad);
-          const nextPlumeCenterLon = currentPlumeCenterLon + hourlyWindShift * Math.sin(windRad);
-          
-          // Update the plume center for the next iteration
-          currentPlumeCenterLat = nextPlumeCenterLat;
-          currentPlumeCenterLon = nextPlumeCenterLon;
-
-
-          // 2. Update Haze Intensity
-          currentPM25 *= HAZE_DECAY;
-          let basePM25 = currentPM25 + (Math.random() - 0.5) * 5; // Add noise
-          if (basePM25 < 5) basePM25 = 5; // Clamp min PM2.5
-          
-          // 3. Add Core Point (The heaviest point of the plume)
-          results.push({
-              latitude: currentPlumeCenterLat,
-              longitude: currentPlumeCenterLon,
-              predicted_pm25: basePM25 * 1.05, // Core is slightly denser
-              forecast_hour: h
-          });
-
-          // 4. Add Satellite Points (The dispersed cluster - now randomized)
-          for (let i = 0; i < NUM_SATELLITES; i++) {
-              // Diffusion spreads relative to the current plume center
-              const dispersionFactor = h * DIFFUSION_RATE;
-              
-              // Generate random angle (0 to 2*PI) and random distance (0 to Max possible spread)
-              const randomAngle = Math.random() * 2 * Math.PI;
-              const maxDist = MAX_OFFSET_DEG * dispersionFactor;
-              const randomDist = Math.random() * maxDist; 
-              
-              const satelliteLat = currentPlumeCenterLat + randomDist * Math.cos(randomAngle);
-              const satelliteLon = currentPlumeCenterLon + randomDist * Math.sin(randomAngle);
-              
-              const satellitePM25 = basePM25 * (0.8 + Math.random() * 0.2); 
-
-              results.push({
-                  latitude: satelliteLat,
-                  longitude: satelliteLon,
-                  predicted_pm25: satellitePM25,
-                  forecast_hour: h
-              });
-          }
-      }
-      
-      console.log(`Local simulation generated ${results.length} predictions.`);
-      return results;
-  }
-  
-  // --- Original Core Logic (Modified) ---
-
-  /**
-   * Loads cities from the API, populates the dropdown, and draws the initial city dots.
-   */
-  async function loadCities() {
-    try {
-      const r = await fetch(API_ROOT + "/api/cities");
-      
-      if (!r.ok) {
-         toast(`Error loading cities: Status ${r.status}`);
-         throw new Error(`HTTP error! status: ${r.status}`);
-      }
-      
-      const d = await r.json();
-
-      const dropdown = document.getElementById("cityDropdown");
-      dropdown.innerHTML = "";
-      
-      if (!d.cities || d.cities.length === 0) {
-        toast("Error: Could not load cities from API.");
-        return;
-      }
-
-      clearMarkers(); 
-      clearHaze(); 
-
-      d.cities.forEach(c => {
-        cityCoordinates[c.city] = c;
-        
-        const opt = document.createElement("option");
-        opt.value = c.city;
-        opt.innerText = c.city;
-        dropdown.appendChild(opt);
-
-        const marker = L.circleMarker([c.latitude, c.longitude], {
-          radius:8, 
-          color:"#06b6d4", 
-          fillColor:"#22d3ee",
-          fillOpacity:0.8,
-          weight:1,
-          className: 'city-marker'
-        }).addTo(map);
-
-        marker.bindPopup(`<b>${c.city}</b><br>Initial Haze Source Point.`);
-        cityMarkers.push(marker);
-      });
-      
-      // Select the first city and fetch its initial wind data
-      const initialCity = dropdown.value;
-      if(initialCity) {
-          await fetchInitialWindData(initialCity);
-      }
-      
-      toast(`Cities loaded. Simulation is ready.`);
-      
-    } catch (error) {
-      console.error("Error loading cities:", error);
-      toast(`Error loading cities. Please check the network connection. (${error.message})`);
-    }
-  }
-
-  /**
-   * Runs the local simulation and initiates the animation.
-   */
-  function runSimulation(){
-    const selectedCity = document.getElementById("cityDropdown").value;
-    const c = cityCoordinates[selectedCity];
-
-    if (!c || !baseWindData) {
-        toast("Please select a city and wait for initial wind data to load.");
-        return;
-    }
-
-    if (autoplayInterval) {
-        clearInterval(autoplayInterval);
-        autoplayInterval = null;
-    }
-
-    clearHaze();
-    toast(`Running local wind simulation from ${selectedCity} with dynamic forecast... 💨`);
-
-    // --- EXECUTE LOCAL MODEL ---
-    // Generate the full dynamic forecast using the fetched base data as the seed
-    generateDynamicWindForecastFromBase();
-    predictions = simulateLocalHazeSpread(c.latitude, c.longitude);
-    // ---------------------------
-    
-    // CHANGED: Zoom level set to 18
-    map.flyTo([c.latitude, c.longitude], 13, {animate:true, duration:1.5}); 
-    
-    if (predictions.length > 0) {
-        toast("Simulation complete. Playing haze spread... 🌬️");
-        playAnimation();
-    } else {
-        toast("Local simulation failed to generate data.");
-    }
-  }
-
-  /**
-   * Starts the 24-hour animation loop (like a video player).
-   */
-  function playAnimation(){
-    clearHaze();
-    let hour=1;
-    document.getElementById("sliderPanel").style.display = "flex"; // Show controls
-
-    // Clear any existing interval before starting a new one
-    if (autoplayInterval) {
-        clearInterval(autoplayInterval);
-    }
-    
-    showHour(hour); // Show hour 1 immediately
-    hour++;
-
-    autoplayInterval = setInterval(()=>{
-      showHour(hour);
-      hour++;
-      if(hour>24){
-        clearInterval(autoplayInterval);
-        autoplayInterval = null;
-        toast("Playback finished. Use slider to inspect manually.");
-      }
-    }, 800); // 800ms per hour step
-  }
-
-  /**
-   * Draws the prediction data for a specific hour based on the toggle view mode.
-   */
-  function showHour(h){
-    clearHaze();
-    document.getElementById("hourSlider").value = h;
-    document.getElementById("hourLabel").innerText = "Hour: "+h;
-    
-    // Determine view mode based on the toggle state
-    const isCumulative = document.getElementById("viewModeToggle").checked;
-    
-    // Filter logic: show up to 'h' for cumulative, or ONLY 'h' for hourly
-    const hourData = predictions.filter(p => 
-        isCumulative ? p.forecast_hour <= h : p.forecast_hour === h
-    );
-
-    hourData.forEach(p => {
-      const pm25 = p.predicted_pm25; 
-      const col = colorForHazePoint(p.forecast_hour);
-      const dynamicRadius = radiusForPM(pm25); 
-
-      // Draw a circle for each predicted point
-      const ring = L.circle([p.latitude, p.longitude],{
-        radius:dynamicRadius, 
-        color:col,
-        fillColor:col,
-        fillOpacity:0.25, 
-        weight:0 
-      }).addTo(map);
-
-      // Add popup with details for inspection
-      ring.bindPopup(`
-          <b>Hour ${p.forecast_hour} Prediction</b><br>
-          PM2.5: ${p.predicted_pm25.toFixed(2)} µg/m³<br>
-          Wind: ${hourlyWindForecast[p.forecast_hour - 1].speed} km/h @ ${hourlyWindForecast[p.forecast_hour - 1].direction}°
-      `);
-
-      hazeLayers.push(ring);
-    });
-  }
-
-  // --- Event Handlers ---
-
-  document.getElementById("simulateLocal").onclick = runSimulation;
-
-  document.getElementById("cityDropdown").addEventListener("change", async e => {
-    const selectedCity = e.target.value;
-    const c = cityCoordinates[selectedCity];
-    
-    clearHaze();
-    toast("Fetching initial wind data...");
-    
-    await fetchInitialWindData(selectedCity);
-
-    if (c) {
-        // CHANGED: Zoom level set to 18
-        map.flyTo([c.latitude, c.longitude], 13, { duration: 1.0 });
-    }
-    toast("City selected. Wind data is ready.");
-  });
-  
-  // NEW: Toggle handler for view mode
-  document.getElementById("viewModeToggle").addEventListener("change", e => {
-      const isChecked = e.target.checked;
-      document.getElementById("toggleLabel").innerText = isChecked ? "Cumulative View" : "Hourly View";
-      
-      // Re-render the current hour based on the new view mode
-      const currentHour = parseInt(document.getElementById("hourSlider").value);
-      showHour(currentHour);
-      
-      // Stop autoplay if running
-      if (autoplayInterval) {
-          clearInterval(autoplayInterval);
-          autoplayInterval = null;
-          toast(`Autoplay paused. Switched to ${isChecked ? 'Cumulative' : 'Hourly'} View.`);
-      }
-  });
+      for (let h = 1; h <= 24; h++) {
+          const wind = hourlyWindForecast[h - 1]; // Get wind data for the current hour
+          const windSpeed = wind.speed;
+          const windDirDeg = wind.direction;
+          const windRad = windDirDeg * (Math.PI / 180);
+          
+          // 1. Calculate new plume center location for THIS hour
+          const hourlyWindShift = windSpeed * DEGREE_PER_KMH;
+          
+          // Calculate the new central location of the haze plume
+          const nextPlumeCenterLat = currentPlumeCenterLat + hourlyWindShift * Math.cos(windRad);
+          const nextPlumeCenterLon = currentPlumeCenterLon + hourlyWindShift * Math.sin(windRad);
+          
+          // Update the plume center for the next iteration
+          currentPlumeCenterLat = nextPlumeCenterLat;
+          currentPlumeCenterLon = nextPlumeCenterLon;
 
 
-  // Handle slider interaction (stops autoplay)
-  document.getElementById("hourSlider").addEventListener("input", e=>{
-    if (autoplayInterval) {
-        clearInterval(autoplayInterval);
-        autoplayInterval = null;
-        toast("Autoplay paused. Inspecting manually.");
-    }
-    showHour(parseInt(e.target.value));
-  });
+          // 2. Update Haze Intensity
+          currentPM25 *= HAZE_DECAY;
+          let basePM25 = currentPM25 + (Math.random() - 0.5) * 5; // Add noise
+          if (basePM25 < 5) basePM25 = 5; // Clamp min PM2.5
+          
+          // 3. Add Core Point (The heaviest point of the plume)
+          results.push({
+              latitude: currentPlumeCenterLat,
+              longitude: currentPlumeCenterLon,
+              predicted_pm25: basePM25 * 1.05, // Core is slightly denser
+              forecast_hour: h
+          });
 
-  // Replay button handler
-  document.getElementById("replayBtn").onclick = ()=>{
-    if (predictions.length > 0) {
-        playAnimation();
-        toast("Replaying simulation... 💨");
-    } else {
-        toast("Please run a simulation first.");
-    }
-  };
+          // 4. Add Satellite Points (The dispersed cluster - now randomized)
+          for (let i = 0; i < NUM_SATELLITES; i++) {
+              // Diffusion spreads relative to the current plume center
+              const dispersionFactor = h * DIFFUSION_RATE;
+              
+              // Generate random angle (0 to 2*PI) and random distance (0 to Max possible spread)
+              const randomAngle = Math.random() * 2 * Math.PI;
+              const maxDist = MAX_OFFSET_DEG * dispersionFactor;
+              const randomDist = Math.random() * maxDist; 
+              
+              const satelliteLat = currentPlumeCenterLat + randomDist * Math.cos(randomAngle);
+              const satelliteLon = currentPlumeCenterLon + randomDist * Math.sin(randomAngle);
+              
+              const satellitePM25 = basePM25 * (0.8 + Math.random() * 0.2); 
 
-  // --- Initialization ---
-  loadCities();
+              results.push({
+                  latitude: satelliteLat,
+                  longitude: satelliteLon,
+                  predicted_pm25: satellitePM25,
+                  forecast_hour: h
+              });
+          }
+      }
+      
+      console.log(`Local simulation generated ${results.length} predictions.`);
+      return results;
+  }
+  
+  // --- City Loading Logic ---
+
+  /**
+   * Loads cities from the API, populates the dropdown, and draws the initial city dots.
+   */
+  async function loadCities() {
+    try {
+      // Fetch list of cities from the external API (not Supabase)
+      const r = await fetch(API_ROOT + "/api/cities");
+      
+      if (!r.ok) {
+         toast(`Error loading cities: Status ${r.status}`);
+         throw new Error(`HTTP error! status: ${r.status}`);
+      }
+      
+      const d = await r.json();
+
+      const dropdown = document.getElementById("cityDropdown");
+      dropdown.innerHTML = "";
+      
+      if (!d.cities || d.cities.length === 0) {
+        toast("Error: Could not load cities from API.");
+        return;
+      }
+
+      clearMarkers(); 
+      clearHaze(); 
+
+      d.cities.forEach(c => {
+        cityCoordinates[c.city] = c;
+        
+        const opt = document.createElement("option");
+        opt.value = c.city;
+        opt.innerText = c.city;
+        dropdown.appendChild(opt);
+
+        // Create city marker on the map
+        const marker = L.circleMarker([c.latitude, c.longitude], {
+          radius:8, 
+          color:"#06b6d4", 
+          fillColor:"#22d3ee",
+          fillOpacity:0.8,
+          weight:1,
+          className: 'city-marker'
+        }).addTo(map);
+
+        marker.bindPopup(`<b>${c.city}</b><br>Initial Haze Source Point.`);
+        cityMarkers.push(marker);
+      });
+      
+      // Select the first city and fetch its initial wind data
+      const initialCity = dropdown.value;
+      if(initialCity) {
+          await fetchInitialWindData(initialCity);
+      }
+      
+      toast(`Cities loaded. Simulation is ready.`);
+      
+    } catch (error) {
+      console.error("Error loading cities:", error);
+      toast(`Error loading cities. Please check the network connection. (${error.message})`);
+    }
+  }
+
+  /**
+   * Runs the local simulation and initiates the animation.
+   */
+  function runSimulation(){
+    const selectedCity = document.getElementById("cityDropdown").value;
+    const c = cityCoordinates[selectedCity];
+
+    if (!c || !baseWindData) {
+        toast("Please select a city and wait for initial wind data to load.");
+        return;
+    }
+
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+    }
+
+    clearHaze();
+    toast(`Running local wind simulation from ${selectedCity} with dynamic forecast... 💨`);
+
+    // --- EXECUTE LOCAL MODEL ---
+    // Generate the full dynamic forecast using the fetched base data as the seed
+    generateDynamicWindForecastFromBase();
+    predictions = simulateLocalHazeSpread(c.latitude, c.longitude);
+    // ---------------------------
+    
+    // Zoom in on the selected city
+    map.flyTo([c.latitude, c.longitude], 13, {animate:true, duration:1.5}); 
+    
+    if (predictions.length > 0) {
+        toast("Simulation complete. Playing haze spread... 🌬️");
+        playAnimation();
+    } else {
+        toast("Local simulation failed to generate data.");
+    }
+  }
+
+  /**
+   * Starts the 24-hour animation loop (like a video player).
+   */
+  function playAnimation(){
+    clearHaze();
+    let hour=1;
+    document.getElementById("sliderPanel").style.display = "flex"; // Show controls
+
+    // Clear any existing interval before starting a new one
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+    }
+    
+    showHour(hour); // Show hour 1 immediately
+    hour++;
+
+    autoplayInterval = setInterval(()=>{
+      showHour(hour);
+      hour++;
+      if(hour>24){
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+        toast("Playback finished. Use slider to inspect manually.");
+      }
+    }, 800); // 800ms per hour step
+  }
+
+  /**
+   * Draws the prediction data for a specific hour based on the toggle view mode.
+   */
+  function showHour(h){
+    clearHaze();
+    document.getElementById("hourSlider").value = h;
+    document.getElementById("hourLabel").innerText = "Hour: "+h;
+    
+    // Determine view mode based on the toggle state
+    const isCumulative = document.getElementById("viewModeToggle").checked;
+    
+    // Filter logic: show up to 'h' for cumulative, or ONLY 'h' for hourly
+    const hourData = predictions.filter(p => 
+        isCumulative ? p.forecast_hour <= h : p.forecast_hour === h
+    );
+
+    hourData.forEach(p => {
+      const pm25 = p.predicted_pm25; 
+      const col = colorForHazePoint(p.forecast_hour);
+      const dynamicRadius = radiusForPM(pm25); 
+
+      // Draw a circle for each predicted point
+      const ring = L.circle([p.latitude, p.longitude],{
+        radius:dynamicRadius, 
+        color:col,
+        fillColor:col,
+        fillOpacity:0.25, 
+        weight:0 
+      }).addTo(map);
+
+      // Add popup with details for inspection
+      ring.bindPopup(`
+          <b>Hour ${p.forecast_hour} Prediction</b><br>
+          PM2.5: ${p.predicted_pm25.toFixed(2)} µg/m³<br>
+          Wind: ${hourlyWindForecast[p.forecast_hour - 1].speed} km/h @ ${hourlyWindForecast[p.forecast_hour - 1].direction}°
+      `);
+
+      hazeLayers.push(ring);
+    });
+  }
+
+  // --- Event Handlers ---
+
+  document.getElementById("simulateLocal").onclick = runSimulation;
+
+  document.getElementById("cityDropdown").addEventListener("change", async e => {
+    const selectedCity = e.target.value;
+    const c = cityCoordinates[selectedCity];
+    
+    clearHaze();
+    
+    const fetchSuccess = await fetchInitialWindData(selectedCity);
+
+    if (c) {
+        // Zoom in on the selected city
+        map.flyTo([c.latitude, c.longitude], 13, { duration: 1.0 });
+    }
+  });
+  
+  // Toggle handler for view mode
+  document.getElementById("viewModeToggle").addEventListener("change", e => {
+      const isChecked = e.target.checked;
+      document.getElementById("toggleLabel").innerText = isChecked ? "Cumulative View" : "Hourly View";
+      
+      // Re-render the current hour based on the new view mode
+      const currentHour = parseInt(document.getElementById("hourSlider").value);
+      if (predictions.length > 0) {
+          showHour(currentHour);
+      }
+      
+      // Stop autoplay if running
+      if (autoplayInterval) {
+          clearInterval(autoplayInterval);
+          autoplayInterval = null;
+          toast(`Autoplay paused. Switched to ${isChecked ? 'Cumulative' : 'Hourly'} View.`);
+      }
+  });
+
+
+  // Handle slider interaction (stops autoplay)
+  document.getElementById("hourSlider").addEventListener("input", e=>{
+    if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+        toast("Autoplay paused. Inspecting manually.");
+    }
+    if (predictions.length > 0) {
+        showHour(parseInt(e.target.value));
+    } else {
+        document.getElementById("hourLabel").innerText = "Hour: "+e.target.value;
+    }
+  });
+
+  // Replay button handler
+  document.getElementById("replayBtn").onclick = ()=>{
+    if (predictions.length > 0) {
+        playAnimation();
+        toast("Replaying simulation... 💨");
+    } else {
+        toast("Please run a simulation first.");
+    }
+  };
+
+  // --- Initialization ---
+  loadCities();
 </script>
 </body>
 </html>
